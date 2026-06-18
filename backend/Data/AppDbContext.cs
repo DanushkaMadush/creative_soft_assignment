@@ -26,6 +26,7 @@ namespace backend.Data
                 entity.Property(x => x.Longitude).HasPrecision(9, 4);
                 entity.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.UpdatedBy).HasMaxLength(100);
+                entity.HasIndex(x => x.Name);
             });
 
             modelBuilder.Entity<Employee>(entity =>
@@ -40,6 +41,9 @@ namespace backend.Data
                     .WithMany(x => x.Employees)
                     .HasForeignKey(x => x.RoleId)
                     .OnDelete(DeleteBehavior.Restrict);
+                entity.HasIndex(x => x.Email).IsUnique();
+                entity.HasIndex(x => x.FishFarmId);
+                entity.HasIndex(x => x.RoleId);
             });
 
             modelBuilder.Entity<Role>(entity =>
