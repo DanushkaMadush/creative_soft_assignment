@@ -36,6 +36,8 @@ frontend/pnpm-debug.log*
 # =========================
 backend/**/bin/
 backend/**/obj/
+backend/wwwroot/uploads/*
+!wwwroot/uploads/.gitkeep
 
 # User-specific files
 backend/**/*.user
