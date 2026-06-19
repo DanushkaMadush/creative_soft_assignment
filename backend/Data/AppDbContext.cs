@@ -33,6 +33,10 @@ namespace backend.Data
             {
                 entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
                 entity.Property(x => x.Email).HasMaxLength(255).IsRequired();
+                entity.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.CertifiedUntil);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.UpdatedBy).HasMaxLength(100);
                 entity.HasOne(x => x.FishFarm)
                     .WithMany(x => x.Employees)
                     .HasForeignKey(x => x.FishFarmId)
