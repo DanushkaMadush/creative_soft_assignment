@@ -2,7 +2,6 @@
 using backend.Models.DTOs.FishFarm;
 using backend.Models.Entities;
 using backend.Services.Interfaces;
-using backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace backend.Services.Implementations
