@@ -18,8 +18,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\DTOs\" />
     <Folder Include="Migrations\" />
+    <Folder Include="Models\DTOs\Employee\" />
   </ItemGroup>
 
 </Project>
