@@ -49,5 +49,45 @@ namespace backend.Services.Implementations
             if (File.Exists(filePath))
                 File.Delete(filePath);
         }
+
+        public async Task<string> SaveEmployeeImageAsync(IFormFile file)
+        {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLower();
+
+            if (!allowedExtensions.Contains(extension))
+                throw new InvalidOperationException("Invalid image type.");
+
+            var fileName = $"{Guid.NewGuid()}{extension}";
+
+            var folderPath = Path.Combine(
+                _environment.WebRootPath,
+                "uploads",
+                "employees"
+            );
+
+            if (!Directory.Exists(folderPath))
+                Directory.CreateDirectory(folderPath);
+
+            var filePath = Path.Combine(folderPath, fileName);
+
+            await using var stream = new FileStream(filePath, FileMode.Create);
+            await file.CopyToAsync(stream);
+
+            return fileName;
+        }
+
+        public void DeleteEmployeeImage(string fileName)
+        {
+            var filePath = Path.Combine(
+                _environment.WebRootPath,
+                "uploads",
+                "employees",
+                fileName
+            );
+
+            if (File.Exists(filePath))
+                File.Delete(filePath);
+        }
     }
 }
