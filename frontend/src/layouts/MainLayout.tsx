@@ -1,13 +1,33 @@
+import { Box, Container } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 
-export default function MainLayout() {
+const MainLayout = () => {
   return (
-    <>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Navbar />
-      <Outlet />
+
+      <Container
+        component="main"
+        maxWidth="lg"
+        sx={{
+          flex: 1,
+          py: { xs: 2, md: 3 },
+        }}
+      >
+        <Outlet />
+      </Container>
+
       <Footer />
-    </>
+    </Box>
   );
-}
+};
+
+export default MainLayout;
