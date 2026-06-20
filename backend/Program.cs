@@ -14,6 +14,16 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
+});
+
 builder.Services.AddScoped<IFishFarmService, FishFarmService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
@@ -30,10 +40,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
+app.UseCors("AllowAll");
+
 app.UseAuthorization();
 
 app.MapControllers();
-
-app.UseStaticFiles();
 
 app.Run();
