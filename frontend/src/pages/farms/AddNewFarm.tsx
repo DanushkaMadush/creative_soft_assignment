@@ -14,6 +14,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import type { FishFarmCreateRequest } from "../../types/fishFarm.types";
+import { fishFarmApi } from "../../api/fishFarm.api";
 
 interface FarmFormState {
   name: string;
@@ -48,6 +50,8 @@ function AddNewFarm() {
   const [errors, setErrors] = useState<FarmFormErrors>({});
   const [imagePreview, setImagePreview] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const validateForm = (): boolean => {
     const newErrors: FarmFormErrors = {};
@@ -149,29 +153,39 @@ function AddNewFarm() {
     setSuccessMessage("");
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
+    setError(null);
+    setSuccessMessage("");
 
     if (!validateForm()) return;
 
-    const submitData = new FormData();
-    submitData.append("Name", formData.name.trim());
-    submitData.append("Latitude", formData.latitude);
-    submitData.append("Longitude", formData.longitude);
-    submitData.append("NumberOfCages", formData.numberOfCages);
-    submitData.append("HasBarge", String(formData.hasBarge));
+    const payload: FishFarmCreateRequest = {
+      name: formData.name.trim(),
+      latitude: Number(formData.latitude),
+      longitude: Number(formData.longitude),
+      numberOfCages: Number(formData.numberOfCages),
+      hasBarge: formData.hasBarge,
+      image: formData.image!,
+    };
 
-    if (formData.image) {
-      submitData.append("Image", formData.image);
+    try {
+      setLoading(true);
+
+      await fishFarmApi.create(payload);
+
+      setSuccessMessage("Farm created successfully.");
+
+      setTimeout(() => {
+        navigate("/farms");
+      }, 800);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to create farm.");
+    } finally {
+      setLoading(false);
     }
-
-    console.log("Farm FormData:", Object.fromEntries(submitData.entries()));
-
-    setSuccessMessage("Farm created successfully.");
-
-    setTimeout(() => {
-      navigate("/farms");
-    }, 800);
   };
 
   return (
@@ -191,6 +205,7 @@ function AddNewFarm() {
           </Box>
 
           {successMessage && <Alert severity="success">{successMessage}</Alert>}
+          {error && <Alert severity="error">{error}</Alert>}
 
           <Box
             component="form"
@@ -226,9 +241,6 @@ function AddNewFarm() {
                     error={Boolean(errors.latitude)}
                     helperText={errors.latitude}
                     required
-                    slotProps={{
-                      htmlInput: { min: -90, max: 90, step: "any" },
-                    }}
                   />
                 </Grid>
 
@@ -242,9 +254,6 @@ function AddNewFarm() {
                     error={Boolean(errors.longitude)}
                     helperText={errors.longitude}
                     required
-                    slotProps={{
-                      htmlInput: { min: -180, max: 180, step: "any" },
-                    }}
                   />
                 </Grid>
 
@@ -345,8 +354,8 @@ function AddNewFarm() {
                   <Button variant="text" onClick={handleReset}>
                     Reset
                   </Button>
-                  <Button type="submit" variant="contained">
-                    Create Farm
+                  <Button type="submit" variant="contained" disabled={loading}>
+                    {loading ? "Creating..." : "Create Farm"}
                   </Button>
                 </Stack>
               </Stack>
