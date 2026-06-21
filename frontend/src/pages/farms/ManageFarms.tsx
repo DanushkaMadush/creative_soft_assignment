@@ -20,7 +20,6 @@ import {
   Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
-import GroupAddIcon from "@mui/icons-material/GroupAdd";
 import { useNavigate } from "react-router";
 import { fishFarmApi } from "../../api/fishFarm.api";
 
@@ -261,7 +260,7 @@ export default function ManageFarms() {
                         height="180"
                         image={`${BASE_IMAGE_URL}${farm.imageUrl}`}
                         alt={farm.name}
-                        sx={{ objectFit: "cover" }}
+                        sx={{ objectFit: "contain" }}
                       />
                     ) : (
                       <Box
@@ -307,7 +306,7 @@ export default function ManageFarms() {
                         />
                       </Stack>
 
-                      <Button
+                      {/* <Button
                         fullWidth
                         variant="outlined"
                         startIcon={<GroupAddIcon />}
@@ -317,7 +316,7 @@ export default function ManageFarms() {
                         }}
                       >
                         Add Employees
-                      </Button>
+                      </Button> */}
                     </CardContent>
                   </CardActionArea>
                 </Card>
