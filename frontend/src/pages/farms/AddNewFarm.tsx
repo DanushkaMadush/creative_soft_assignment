@@ -326,13 +326,12 @@ function AddNewFarm() {
                           src={imagePreview}
                           alt="Selected farm preview"
                           sx={{
-                            width: "100%",
-                            maxHeight: 260,
+                            width: 160,
+                            height: 160,
                             objectFit: "cover",
                             borderRadius: 2,
                             border: "1px solid",
                             borderColor: "divider",
-                            mt: 1,
                           }}
                         />
                       )}
