@@ -44,6 +44,10 @@ backend/**/*.user
 backend/**/*.suo
 backend/**/*.userosscache
 backend/**/*.sln.docstates
+**/bin/
+**/obj/
+bin/
+obj/
 
 # Rider
 backend/.idea/
