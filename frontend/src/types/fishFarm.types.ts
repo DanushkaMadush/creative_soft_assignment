@@ -1,0 +1,57 @@
+export type FishFarmId = string;
+
+export type EmployeeId = string;
+
+export interface FishFarmResponse {
+  id: FishFarmId;
+  name: string;
+  latitude: number;
+  longitude: number;
+  numberOfCages: number;
+  hasBarge: boolean;
+  isActive: boolean;
+  imageUrl?: string | null;
+}
+
+export interface FishFarmQuery {
+  searchTerm?: string;
+  hasBarge?: boolean;
+  isActive?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+}
+
+export interface FishFarmCreateRequest {
+  name: string;
+  latitude: number;
+  longitude: number;
+  numberOfCages: number;
+  hasBarge: boolean;
+  image: File;
+}
+
+export interface FishFarmUpdateRequest {
+  name: string;
+  latitude: number;
+  longitude: number;
+  numberOfCages: number;
+  hasBarge: boolean;
+  image?: File | null;
+}
+
+export interface FishFarmEmployeeResponse {
+  id: EmployeeId;
+  name: string;
+  email: string;
+  roleName: string;
+  certifiedUntil?: string | null;
+  isActive: boolean;
+  imageUrl?: string | null;
+}

@@ -1,4 +1,5 @@
 ﻿using backend.Models.DTOs.FishFarm;
+using backend.Services.Implementations;
 using backend.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -62,6 +63,13 @@ namespace backend.Controllers
                 return NotFound("Fish farm not found.");
 
             return NoContent();
+        }
+
+        [HttpGet("{fishFarmId:guid}/employees")]
+        public async Task<IActionResult> GetEmployeesByFishFarm(Guid fishFarmId)
+        {
+            var employees = await _fishFarmService.GetByFishFarmIdAsync(fishFarmId);
+            return Ok(employees);
         }
     }
 }

@@ -195,5 +195,28 @@ namespace backend.Services.Implementations
             await _context.SaveChangesAsync();
             return true;
         }
+
+        public async Task<List<EmployeeByFishFarmResponseDto>> GetByFishFarmIdAsync(Guid fishFarmId)
+        {
+            return await _context.Employees
+                .AsNoTracking()
+                .Where(e => e.FishFarmId == fishFarmId && e.IsActive)
+                .Include(e => e.Role)
+                .Include(e => e.Images)
+                .OrderBy(e => e.Name)
+                .Select(e => new EmployeeByFishFarmResponseDto
+                {
+                    Id = e.Id,
+                    Name = e.Name,
+                    Email = e.Email,
+                    RoleName = e.Role.Name,
+                    CertifiedUntil = e.CertifiedUntil,
+                    IsActive = e.IsActive,
+                    ImageUrl = e.Images
+                        .Select(i => "/uploads/employees/" + i.ImageName)
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
+        }
     }
 }
