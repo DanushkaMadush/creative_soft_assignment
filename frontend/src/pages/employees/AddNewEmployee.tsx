@@ -157,8 +157,9 @@ function AddNewEmployee() {
       setSubmitting(true);
       await employeeApi.create(formData);
       setSuccessMessage("Employee created successfully.");
-      setForm(initialForm);
-      setErrors({});
+      setTimeout(() => {
+        navigate("/employees");
+      }, 800);
     } catch {
       setErrorMessage("Failed to create employee. Please try again.");
     } finally {
