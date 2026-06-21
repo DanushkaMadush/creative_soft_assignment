@@ -9,7 +9,6 @@ import ManageEmployees from "../pages/employees/ManageEmployees";
 import AddNewEmployee from "../pages/employees/AddNewEmployee";
 import ViewEmployee from "../pages/employees/ViewEmployee";
 import ManageFarms from "../pages/farms/ManageFarms";
-import AddEmployeesToFarm from "../pages/farms/AddEmployeesToFarm";
 
 const router = createBrowserRouter([
     {
@@ -41,11 +40,7 @@ const router = createBrowserRouter([
             {
                 path: "farms/:id",
                 element: <ViewFarm />,
-            }, 
-            {
-                path: "farms/:id/add-employees",
-                element: <AddEmployeesToFarm />,
-            }, 
+            },  
             {
                 path: "employees",
                 element: <ManageEmployees />,
