@@ -1,5 +1,7 @@
 export type FishFarmId = string;
 
+export type EmployeeId = string;
+
 export interface FishFarmResponse {
   id: FishFarmId;
   name: string;
@@ -42,4 +44,14 @@ export interface FishFarmUpdateRequest {
   numberOfCages: number;
   hasBarge: boolean;
   image?: File | null;
+}
+
+export interface FishFarmEmployeeResponse {
+  id: EmployeeId;
+  name: string;
+  email: string;
+  roleName: string;
+  certifiedUntil?: string | null;
+  isActive: boolean;
+  imageUrl?: string | null;
 }

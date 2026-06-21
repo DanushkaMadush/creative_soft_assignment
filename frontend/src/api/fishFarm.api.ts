@@ -5,6 +5,7 @@ import type {
   FishFarmId,
   FishFarmUpdateRequest,
   FishFarmResponse,
+  FishFarmEmployeeResponse,
 } from "../types/fishFarm.types";
 import { http } from "./http";
 
@@ -56,5 +57,10 @@ export const fishFarmApi = {
 
   delete: async (id: FishFarmId): Promise<void> => {
     await http.delete(`/api/v1/fish-farms/${id}`);
+  },
+
+  getEmployees: async (id: FishFarmId): Promise<FishFarmEmployeeResponse[]> => {
+    const res = await http.get(`/api/v1/fish-farms/${id}/employees`);
+    return res.data;
   },
 };
