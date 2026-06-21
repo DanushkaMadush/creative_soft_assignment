@@ -29,20 +29,12 @@ import type {
   EmployeeQuery,
   PagedResponse,
 } from "../../types/employee.types";
+import type { Role } from "../../types/role.types";
+import type { FishFarmResponse } from "../../types/fishFarm.types";
+import { roleApi } from "../../api/role.api";
+import { fishFarmApi } from "../../api/fishFarm.api";
 
 const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
-
-const farmOptions = [
-  // TODO: Replace with fishFarmApi.getAll()
-  { id: "farm-1", name: "Blue Ocean Farm" },
-  { id: "farm-2", name: "Green Valley Farm" },
-];
-
-const roleOptions = [
-  // TODO: Replace with roleApi.getAll()
-  { id: "role-1", name: "Manager" },
-  { id: "role-2", name: "Technician" },
-];
 
 const ManageEmployees = () => {
   const navigate = useNavigate();
@@ -59,6 +51,9 @@ const ManageEmployees = () => {
 
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [fishFarms, setFishFarms] = useState<FishFarmResponse[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +104,34 @@ const ManageEmployees = () => {
     setPageNumber(1);
   };
 
+  useEffect(() => {
+    const loadRoles = async () => {
+      try {
+        const data = await roleApi.getAll();
+        setRoles(data);
+      } catch (error) {
+        setError("Failed to load roles. Please try again.");
+      }
+    };
+    loadRoles();
+  }, []);
+
+  useEffect(() => {
+    const loadFishFarms = async () => {
+      try {
+        const result = await fishFarmApi.getAll({
+          isActive: true,
+          pageNumber: 1,
+          pageSize: 100,
+        });
+        setFishFarms(result.items);
+      } catch (error) {
+        setError("Failed to load fish farms. Please try again.");
+      }
+    };
+    loadFishFarms();
+  }, []);
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       <Stack spacing={3}>
@@ -155,7 +178,7 @@ const ManageEmployees = () => {
                   }}
                 >
                   <MenuItem value="">All Farms</MenuItem>
-                  {farmOptions.map((farm) => (
+                  {fishFarms.map((farm) => (
                     <MenuItem key={farm.id} value={farm.id}>
                       {farm.name}
                     </MenuItem>
@@ -176,7 +199,7 @@ const ManageEmployees = () => {
                   }}
                 >
                   <MenuItem value="">All Roles</MenuItem>
-                  {roleOptions.map((role) => (
+                  {roles.map((role) => (
                     <MenuItem key={role.id} value={role.id}>
                       {role.name}
                     </MenuItem>
@@ -260,12 +283,16 @@ const ManageEmployees = () => {
                   : null;
 
                 return (
-                  <Grid sx={{ xs: 12, sm: 6, md: 4, lg: 3 }} key={employee.id}>
+                  <Grid size={{ xs: 12, sm: 6, md: 4 }} key={employee.id}>
                     <Card
                       sx={{
                         height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
+                        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+                        "&:hover": {
+                            cursor: "pointer",
+                            boxShadow: 6,
+                            transform: "translateY(-2px)",
+                        },
                       }}
                     >
                       <CardActionArea
@@ -283,7 +310,7 @@ const ManageEmployees = () => {
                             height="180"
                             image={imageSrc}
                             alt={employee.name}
-                            sx={{ objectFit: "cover" }}
+                            sx={{ objectFit: "contain" }}
                           />
                         ) : (
                           <Box
