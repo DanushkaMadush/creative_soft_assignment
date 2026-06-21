@@ -15,9 +15,9 @@ import { useState } from "react";
 import { Link as RouterLink, useLocation } from "react-router-dom";
 
 const menuItems = [
-  { label: "Dashboard", path: "/" },
   { label: "Farms", path: "/farms" },
   { label: "Employees", path: "/employees" },
+  { label: "Logout", path: "/login" },
 ];
 
 const Navbar = () => {
