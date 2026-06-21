@@ -23,6 +23,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import { employeeApi } from "../../api/employee.api";
 import type {
   Employee,
@@ -148,6 +149,7 @@ const ManageEmployees = () => {
 
           <Button
             variant="contained"
+            startIcon={<AddIcon />}
             size="large"
             onClick={() => navigate("/employees/add")}
           >
@@ -237,9 +239,9 @@ const ManageEmployees = () => {
                     setPageNumber(1);
                   }}
                 >
-                  <MenuItem value={5}>5</MenuItem>
-                  <MenuItem value={10}>10</MenuItem>
-                  <MenuItem value={20}>20</MenuItem>
+                  <MenuItem value={6}>6</MenuItem>
+                  <MenuItem value={12}>12</MenuItem>
+                  <MenuItem value={24}>24</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
