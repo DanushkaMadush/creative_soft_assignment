@@ -9,5 +9,7 @@ namespace backend.Services.Interfaces
         Task<FishFarmResponseDto> CreateAsync(FishFarmCreateDto dto);
         Task<bool> UpdateAsync(Guid id, FishFarmUpdateDto dto);
         Task<bool> DeleteAsync(Guid id);
+        Task<List<EmployeeByFishFarmResponseDto>> GetByFishFarmIdAsync(Guid fishFarmId);
+
     }
 }
