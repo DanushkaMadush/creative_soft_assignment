@@ -285,3 +285,9 @@ Static files are exposed by `app.UseStaticFiles()`, so stored upload paths can b
 
 - The backend solution file is [`backend/backend.sln`](./backend/backend.sln)
 - The repository-level README was generated from the current codebase state, not from assumptions
+
+## Screenshots
+
+<img width="1886" height="890" alt="image" src="https://github.com/user-attachments/assets/d2b2414c-3ff8-4528-a57f-e3898a6207bf" />
+<img width="1884" height="889" alt="image" src="https://github.com/user-attachments/assets/b2faa372-897f-475d-ab03-25eabc15c32b" />
+
