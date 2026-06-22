@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, Navigate, RouterProvider } from "react-router-dom";
 import Login from "../pages/Login";
 import AuthLayout from "../layouts/AuthLayout";
 import MainLayout from "../layouts/MainLayout";
@@ -9,6 +9,7 @@ import ManageEmployees from "../pages/employees/ManageEmployees";
 import AddNewEmployee from "../pages/employees/AddNewEmployee";
 import ViewEmployee from "../pages/employees/ViewEmployee";
 import ManageFarms from "../pages/farms/ManageFarms";
+import LazyLoad from "./LazyLoad";
 
 const router = createBrowserRouter([
     {
@@ -17,7 +18,7 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Login />,
+                element: LazyLoad(Login),
             }
         ]
     },
@@ -27,31 +28,35 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <Home />,
+                element: <Navigate to="/login" replace />
+            },
+            {
+                path: "home",
+                element: LazyLoad(Home),
             }, 
             {
                 path: "farms",
-                element: <ManageFarms />,
+                element: LazyLoad(ManageFarms),
             }, 
             {
                 path: "farms/add",
-                element: <AddNewFarm />,
+                element: LazyLoad(AddNewFarm),
             }, 
             {
                 path: "farms/:id",
-                element: <ViewFarm />,
+                element: LazyLoad(ViewFarm),
             },  
             {
                 path: "employees",
-                element: <ManageEmployees />,
+                element: LazyLoad(ManageEmployees),
             }, 
             {
                 path: "employees/add",
-                element: <AddNewEmployee />,
+                element: LazyLoad(AddNewEmployee),
             }, 
             {
                 path: "employees/:id",
-                element: <ViewEmployee />,
+                element: LazyLoad(ViewEmployee),
             },
         ]
     },    
