@@ -7,6 +7,5 @@ namespace backend.Services.Interfaces
         Task<DashboardCountDto> GetTotalFishFarmsAsync();
         Task<DashboardCountDto> GetTotalEmployeesAsync();
         Task<List<FishFarmLocationDto>> GetFishFarmLocationsAsync();
-        void ClearDashboardCache();
     }
 }

@@ -2,14 +2,13 @@
 using backend.Models.DTOs.Dashboard;
 using backend.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace backend.Services.Implementations
 {
     public class DashboardService : IDashboardService
     {
         private readonly AppDbContext _context;
-        private readonly IMemoryCache _cache;
+        private readonly ICacheService _cacheService;
 
         private const string TotalFishFarmsKey = "dashboard_total_fishfarms";
         private const string TotalEmployeesKey = "dashboard_total_employees";
@@ -17,66 +16,86 @@ namespace backend.Services.Implementations
 
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public DashboardService(AppDbContext context, IMemoryCache cache)
+        public DashboardService(AppDbContext context, ICacheService cacheService)
         {
             _context = context;
-            _cache = cache;
+            _cacheService = cacheService;
         }
 
         public async Task<DashboardCountDto> GetTotalFishFarmsAsync()
         {
-            return await _cache.GetOrCreateAsync(TotalFishFarmsKey, async entry =>
+            var cachedResult =
+                await _cacheService.GetAsync<DashboardCountDto>(TotalFishFarmsKey);
+
+            if (cachedResult != null)
             {
-                entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+                return cachedResult;
+            }
 
-                var total = await _context.FishFarms
-                    .AsNoTracking()
-                    .CountAsync(x => x.IsActive);
+            var total = await _context.FishFarms
+                .AsNoTracking()
+                .CountAsync(x => x.IsActive);
 
-                return new DashboardCountDto { Total = total };
-            }) ?? new DashboardCountDto();
+            var result = new DashboardCountDto
+            {
+                Total = total
+            };
+
+            _cacheService.Set(TotalFishFarmsKey, result, CacheDuration);
+
+            return result;
         }
 
         public async Task<DashboardCountDto> GetTotalEmployeesAsync()
         {
-            return await _cache.GetOrCreateAsync(TotalEmployeesKey, async entry =>
+            var cachedResult =
+                await _cacheService.GetAsync<DashboardCountDto>(TotalEmployeesKey);
+
+            if (cachedResult != null)
             {
-                entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+                return cachedResult;
+            }
 
-                var total = await _context.Employees
-                    .AsNoTracking()
-                    .CountAsync(x => x.IsActive);
+            var total = await _context.Employees
+                .AsNoTracking()
+                .CountAsync(x => x.IsActive);
 
-                return new DashboardCountDto { Total = total };
-            }) ?? new DashboardCountDto();
+            var result = new DashboardCountDto
+            {
+                Total = total
+            };
+
+            _cacheService.Set(TotalEmployeesKey, result, CacheDuration);
+
+            return result;
         }
 
         public async Task<List<FishFarmLocationDto>> GetFishFarmLocationsAsync()
         {
-            return await _cache.GetOrCreateAsync(FishFarmLocationsKey, async entry =>
+            var cachedResult =
+                await _cacheService.GetAsync<List<FishFarmLocationDto>>(FishFarmLocationsKey);
+
+            if (cachedResult != null)
             {
-                entry.AbsoluteExpirationRelativeToNow = CacheDuration;
+                return cachedResult;
+            }
 
-                return await _context.FishFarms
-                    .AsNoTracking()
-                    .Where(x => x.IsActive)
-                    .OrderBy(x => x.Name)
-                    .Select(x => new FishFarmLocationDto
-                    {
-                        FishFarmId = x.Id,
-                        FishFarmName = x.Name,
-                        Latitude = x.Latitude,
-                        Longitude = x.Longitude
-                    })
-                    .ToListAsync();
-            }) ?? new List<FishFarmLocationDto>();
-        }
+            var result = await _context.FishFarms
+                .AsNoTracking()
+                .Where(x => x.IsActive)
+                .OrderBy(x => x.Name)
+                .Select(x => new FishFarmLocationDto
+                {
+                    FishFarmId = x.Id,
+                    FishFarmName = x.Name,
+                    Latitude = x.Latitude,
+                    Longitude = x.Longitude
+                })
+                .ToListAsync();
 
-        public void ClearDashboardCache()
-        {
-            _cache.Remove(TotalFishFarmsKey);
-            _cache.Remove(TotalEmployeesKey);
-            _cache.Remove(FishFarmLocationsKey);
+            _cacheService.Set(FishFarmLocationsKey, result, CacheDuration);
+
+            return result;
         }
     }
 }
