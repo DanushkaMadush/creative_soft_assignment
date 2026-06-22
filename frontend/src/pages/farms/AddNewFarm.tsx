@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { ChangeEvent, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Box,
@@ -17,7 +17,7 @@ import {
 import type { FishFarmCreateRequest } from "../../types/fishFarm.types";
 import { fishFarmApi } from "../../api/fishFarm.api";
 
-interface FarmFormState {
+interface FarmFormValues {
   name: string;
   latitude: string;
   longitude: string;
@@ -26,15 +26,7 @@ interface FarmFormState {
   image: File | null;
 }
 
-interface FarmFormErrors {
-  name?: string;
-  latitude?: string;
-  longitude?: string;
-  numberOfCages?: string;
-  image?: string;
-}
-
-const initialFormState: FarmFormState = {
+const defaultValues: FarmFormValues = {
   name: "",
   latitude: "",
   longitude: "",
@@ -46,133 +38,65 @@ const initialFormState: FarmFormState = {
 function AddNewFarm() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<FarmFormState>(initialFormState);
-  const [errors, setErrors] = useState<FarmFormErrors>({});
   const [imagePreview, setImagePreview] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  const validateForm = (): boolean => {
-    const newErrors: FarmFormErrors = {};
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FarmFormValues>({
+    defaultValues,
+    mode: "onBlur",
+  });
 
-    const latitude = Number(formData.latitude);
-    const longitude = Number(formData.longitude);
-    const numberOfCages = Number(formData.numberOfCages);
+  const selectedImage = watch("image");
 
-    if (!formData.name.trim()) {
-      newErrors.name = "Farm name is required.";
-    }
+  const handleImageChange = (file: File | null) => {
+    if (!file) return;
 
-    if (!formData.latitude) {
-      newErrors.latitude = "Latitude is required.";
-    } else if (Number.isNaN(latitude) || latitude < -90 || latitude > 90) {
-      newErrors.latitude = "Latitude must be between -90 and 90.";
-    }
-
-    if (!formData.longitude) {
-      newErrors.longitude = "Longitude is required.";
-    } else if (Number.isNaN(longitude) || longitude < -180 || longitude > 180) {
-      newErrors.longitude = "Longitude must be between -180 and 180.";
-    }
-
-    if (!formData.numberOfCages) {
-      newErrors.numberOfCages = "Number of cages is required.";
-    } else if (
-      Number.isNaN(numberOfCages) ||
-      !Number.isInteger(numberOfCages) ||
-      numberOfCages <= 0
-    ) {
-      newErrors.numberOfCages = "Number of cages must be greater than 0.";
-    }
-
-    if (!formData.image) {
-      newErrors.image = "Farm image is required.";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleTextChange =
-    (field: keyof Omit<FarmFormState, "hasBarge" | "image">) =>
-    (event: ChangeEvent<HTMLInputElement>) => {
-      setFormData((prev) => ({
-        ...prev,
-        [field]: event.target.value,
-      }));
-
-      setErrors((prev) => ({
-        ...prev,
-        [field]: undefined,
-      }));
-    };
-
-  const handleBargeChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      hasBarge: event.target.checked,
-    }));
-  };
-
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = event.target.files?.[0];
-
-    if (!selectedFile) return;
-
-    if (!selectedFile.type.startsWith("image/")) {
-      setFormData((prev) => ({
-        ...prev,
-        image: null,
-      }));
+    if (!file.type.startsWith("image/")) {
+      setValue("image", null, {
+        shouldValidate: true,
+      });
       setImagePreview("");
-      setErrors((prev) => ({
-        ...prev,
-        image: "Only image files are allowed.",
-      }));
       return;
     }
 
-    setFormData((prev) => ({
-      ...prev,
-      image: selectedFile,
-    }));
+    setValue("image", file, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
-    setErrors((prev) => ({
-      ...prev,
-      image: undefined,
-    }));
-
-    setImagePreview(URL.createObjectURL(selectedFile));
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleReset = () => {
-    setFormData(initialFormState);
-    setErrors({});
+    reset(defaultValues);
     setImagePreview("");
     setSuccessMessage("");
+    setApiError(null);
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    setError(null);
+  const onSubmit = async (data: FarmFormValues) => {
+    setApiError(null);
     setSuccessMessage("");
 
-    if (!validateForm()) return;
-
     const payload: FishFarmCreateRequest = {
-      name: formData.name.trim(),
-      latitude: Number(formData.latitude),
-      longitude: Number(formData.longitude),
-      numberOfCages: Number(formData.numberOfCages),
-      hasBarge: formData.hasBarge,
-      image: formData.image!,
+      name: data.name.trim(),
+      latitude: Number(data.latitude),
+      longitude: Number(data.longitude),
+      numberOfCages: Number(data.numberOfCages),
+      hasBarge: data.hasBarge,
+      image: data.image!,
     };
 
     try {
-      setLoading(true);
-
       await fishFarmApi.create(payload);
 
       setSuccessMessage("Farm created successfully.");
@@ -182,9 +106,7 @@ function AddNewFarm() {
       }, 800);
     } catch (err) {
       console.error(err);
-      setError("Failed to create farm.");
-    } finally {
-      setLoading(false);
+      setApiError("Failed to create farm.");
     }
   };
 
@@ -205,11 +127,11 @@ function AddNewFarm() {
           </Box>
 
           {successMessage && <Alert severity="success">{successMessage}</Alert>}
-          {error && <Alert severity="error">{error}</Alert>}
+          {apiError && <Alert severity="error">{apiError}</Alert>}
 
           <Box
             component="form"
-            onSubmit={handleSubmit}
+            onSubmit={handleSubmit(onSubmit)}
             noValidate
             sx={{
               maxWidth: 600,
@@ -223,11 +145,14 @@ function AddNewFarm() {
                   <TextField
                     fullWidth
                     label="Name"
-                    value={formData.name}
-                    onChange={handleTextChange("name")}
-                    error={Boolean(errors.name)}
-                    helperText={errors.name}
                     required
+                    error={Boolean(errors.name)}
+                    helperText={errors.name?.message}
+                    {...register("name", {
+                      required: "Farm name is required.",
+                      validate: (value) =>
+                        value.trim().length > 0 || "Farm name is required.",
+                    })}
                   />
                 </Grid>
 
@@ -236,11 +161,25 @@ function AddNewFarm() {
                     fullWidth
                     label="Latitude"
                     type="number"
-                    value={formData.latitude}
-                    onChange={handleTextChange("latitude")}
-                    error={Boolean(errors.latitude)}
-                    helperText={errors.latitude}
                     required
+                    error={Boolean(errors.latitude)}
+                    helperText={errors.latitude?.message}
+                    {...register("latitude", {
+                      required: "Latitude is required.",
+                      validate: (value) => {
+                        const numberValue = Number(value);
+
+                        if (Number.isNaN(numberValue)) {
+                          return "Latitude must be a valid number.";
+                        }
+
+                        if (numberValue < -90 || numberValue > 90) {
+                          return "Latitude must be between -90 and 90.";
+                        }
+
+                        return true;
+                      },
+                    })}
                   />
                 </Grid>
 
@@ -249,11 +188,25 @@ function AddNewFarm() {
                     fullWidth
                     label="Longitude"
                     type="number"
-                    value={formData.longitude}
-                    onChange={handleTextChange("longitude")}
-                    error={Boolean(errors.longitude)}
-                    helperText={errors.longitude}
                     required
+                    error={Boolean(errors.longitude)}
+                    helperText={errors.longitude?.message}
+                    {...register("longitude", {
+                      required: "Longitude is required.",
+                      validate: (value) => {
+                        const numberValue = Number(value);
+
+                        if (Number.isNaN(numberValue)) {
+                          return "Longitude must be a valid number.";
+                        }
+
+                        if (numberValue < -180 || numberValue > 180) {
+                          return "Longitude must be between -180 and 180.";
+                        }
+
+                        return true;
+                      },
+                    })}
                   />
                 </Grid>
 
@@ -262,26 +215,46 @@ function AddNewFarm() {
                     fullWidth
                     label="Number of Cages"
                     type="number"
-                    value={formData.numberOfCages}
-                    onChange={handleTextChange("numberOfCages")}
-                    error={Boolean(errors.numberOfCages)}
-                    helperText={errors.numberOfCages}
                     required
+                    error={Boolean(errors.numberOfCages)}
+                    helperText={errors.numberOfCages?.message}
                     slotProps={{
                       htmlInput: { min: 1, step: 1 },
                     }}
+                    {...register("numberOfCages", {
+                      required: "Number of cages is required.",
+                      validate: (value) => {
+                        const numberValue = Number(value);
+
+                        if (Number.isNaN(numberValue)) {
+                          return "Number of cages must be a valid number.";
+                        }
+
+                        if (!Number.isInteger(numberValue) || numberValue <= 0) {
+                          return "Number of cages must be greater than 0.";
+                        }
+
+                        return true;
+                      },
+                    })}
                   />
                 </Grid>
 
                 <Grid size={12}>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={formData.hasBarge}
-                        onChange={handleBargeChange}
+                  <Controller
+                    name="hasBarge"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={field.value}
+                            onChange={(_, checked) => field.onChange(checked)}
+                          />
+                        }
+                        label="Barge"
                       />
-                    }
-                    label="Barge"
+                    )}
                   />
                 </Grid>
 
@@ -304,19 +277,28 @@ function AddNewFarm() {
                           hidden
                           type="file"
                           accept="image/*"
-                          onChange={handleImageChange}
+                          onChange={(event) =>
+                            handleImageChange(event.target.files?.[0] ?? null)
+                          }
                         />
                       </Button>
 
-                      {formData.image && (
+                      <input
+                        type="hidden"
+                        {...register("image", {
+                          required: "Farm image is required.",
+                        })}
+                      />
+
+                      {selectedImage && (
                         <Typography variant="body2" color="text.secondary">
-                          Selected file: {formData.image.name}
+                          Selected file: {selectedImage.name}
                         </Typography>
                       )}
 
                       {errors.image && (
                         <Typography variant="caption" color="error">
-                          {errors.image}
+                          {errors.image.message}
                         </Typography>
                       )}
 
@@ -353,8 +335,9 @@ function AddNewFarm() {
                   <Button variant="text" onClick={handleReset}>
                     Reset
                   </Button>
-                  <Button type="submit" variant="contained" disabled={loading}>
-                    {loading ? "Creating..." : "Create Farm"}
+
+                  <Button type="submit" variant="contained" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating..." : "Create Farm"}
                   </Button>
                 </Stack>
               </Stack>
