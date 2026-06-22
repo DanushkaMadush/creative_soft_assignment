@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Avatar,
@@ -37,29 +38,20 @@ import { fishFarmApi } from "../../api/fishFarm.api";
 
 const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
 
+type StatusFilter = "all" | "active" | "inactive";
+
 const ManageEmployees = () => {
   const navigate = useNavigate();
-
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
   const [fishFarmId, setFishFarmId] = useState("");
   const [roleId, setRoleId] = useState("");
-  const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
+  const [status, setStatus] = useState<StatusFilter>("all");
 
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(6);
-
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [fishFarms, setFishFarms] = useState<FishFarmResponse[]>([]);
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -70,68 +62,56 @@ const ManageEmployees = () => {
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
 
-  const fetchEmployees = async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  const employeeQuery: EmployeeQuery = useMemo(
+    () => ({
+      searchTerm: debouncedSearchTerm || undefined,
+      fishFarmId: fishFarmId || undefined,
+      roleId: roleId || undefined,
+      isActive:
+        status === "all" ? undefined : status === "active" ? true : false,
+      pageNumber,
+      pageSize,
+    }),
+    [debouncedSearchTerm, fishFarmId, roleId, status, pageNumber, pageSize],
+  );
 
-      const params: EmployeeQuery = {
-        searchTerm: debouncedSearchTerm || undefined,
-        fishFarmId: fishFarmId || undefined,
-        roleId: roleId || undefined,
-        isActive:
-          status === "all" ? undefined : status === "active" ? true : false,
-        pageNumber,
-        pageSize,
-      };
+  const {
+    data: employeeData,
+    isLoading: isEmployeesLoading,
+    isError: isEmployeesError,
+    isFetching: isEmployeesFetching,
+    refetch: refetchEmployees,
+  } = useQuery<PagedResponse<Employee>>({
+    queryKey: ["employees", employeeQuery],
+    queryFn: () => employeeApi.getAll(employeeQuery),
+  });
 
-      const response: PagedResponse<Employee> =
-        await employeeApi.getAll(params);
+  const { data: roles = [], isError: isRolesError } = useQuery<Role[]>({
+    queryKey: ["roles"],
+    queryFn: roleApi.getAll,
+  });
 
-      setEmployees(response.items);
-      setTotalCount(response.totalCount);
-    } catch {
-      setError("Failed to load employees. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: fishFarmData, isError: isFishFarmsError } = useQuery({
+    queryKey: ["fish-farms", "active-dropdown"],
+    queryFn: () =>
+      fishFarmApi.getAll({
+        isActive: true,
+        pageNumber: 1,
+        pageSize: 100,
+      }),
+  });
 
-  useEffect(() => {
-    fetchEmployees();
-  }, [debouncedSearchTerm, fishFarmId, roleId, status, pageNumber, pageSize]);
+  const employees = employeeData?.items ?? [];
+  const totalCount = employeeData?.totalCount ?? 0;
+  const fishFarms: FishFarmResponse[] = fishFarmData?.items ?? [];
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const resetToFirstPage = () => {
     setPageNumber(1);
   };
 
-  useEffect(() => {
-    const loadRoles = async () => {
-      try {
-        const data = await roleApi.getAll();
-        setRoles(data);
-      } catch (error) {
-        setError("Failed to load roles. Please try again.");
-      }
-    };
-    loadRoles();
-  }, []);
-
-  useEffect(() => {
-    const loadFishFarms = async () => {
-      try {
-        const result = await fishFarmApi.getAll({
-          isActive: true,
-          pageNumber: 1,
-          pageSize: 100,
-        });
-        setFishFarms(result.items);
-      } catch (error) {
-        setError("Failed to load fish farms. Please try again.");
-      }
-    };
-    loadFishFarms();
-  }, []);
+  const hasDropdownError = isRolesError || isFishFarmsError;
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -156,6 +136,12 @@ const ManageEmployees = () => {
             Add New Employee
           </Button>
         </Stack>
+
+        {hasDropdownError && (
+          <Alert severity="warning">
+            Some filter data failed to load. Please refresh the page.
+          </Alert>
+        )}
 
         <Card sx={{ p: 2 }}>
           <Grid container spacing={2}>
@@ -217,7 +203,7 @@ const ManageEmployees = () => {
                   label="Status"
                   value={status}
                   onChange={(event) => {
-                    setStatus(event.target.value as typeof status);
+                    setStatus(event.target.value as StatusFilter);
                     resetToFirstPage();
                   }}
                 >
@@ -248,26 +234,36 @@ const ManageEmployees = () => {
           </Grid>
         </Card>
 
-        {loading && (
+        {isEmployeesFetching && !isEmployeesLoading && (
+          <Typography variant="body2" color="text.secondary">
+            Refreshing employees...
+          </Typography>
+        )}
+
+        {isEmployeesLoading && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
         )}
 
-        {!loading && error && (
+        {!isEmployeesLoading && isEmployeesError && (
           <Alert
             severity="error"
             action={
-              <Button color="inherit" size="small" onClick={fetchEmployees}>
+              <Button
+                color="inherit"
+                size="small"
+                onClick={() => refetchEmployees()}
+              >
                 Retry
               </Button>
             }
           >
-            {error}
+            Failed to load employees. Please try again.
           </Alert>
         )}
 
-        {!loading && !error && employees.length === 0 && (
+        {!isEmployeesLoading && !isEmployeesError && employees.length === 0 && (
           <Box sx={{ textAlign: "center", py: 8 }}>
             <Typography variant="h6">No employees found</Typography>
             <Typography color="text.secondary" sx={{ mt: 1 }}>
@@ -276,7 +272,7 @@ const ManageEmployees = () => {
           </Box>
         )}
 
-        {!loading && !error && employees.length > 0 && (
+        {!isEmployeesLoading && !isEmployeesError && employees.length > 0 && (
           <>
             <Grid container spacing={3}>
               {employees.map((employee) => {
@@ -291,9 +287,9 @@ const ManageEmployees = () => {
                         height: "100%",
                         transition: "box-shadow 0.2s ease, transform 0.2s ease",
                         "&:hover": {
-                            cursor: "pointer",
-                            boxShadow: 6,
-                            transform: "translateY(-2px)",
+                          cursor: "pointer",
+                          boxShadow: 6,
+                          transform: "translateY(-2px)",
                         },
                       }}
                     >
@@ -331,7 +327,11 @@ const ManageEmployees = () => {
                         )}
 
                         <CardContent sx={{ width: "100%", flexGrow: 1 }}>
-                          <Typography variant="h6" sx={{ fontWeight: 700 }} noWrap>
+                          <Typography
+                            variant="h6"
+                            sx={{ fontWeight: 700 }}
+                            noWrap
+                          >
                             {employee.name}
                           </Typography>
 

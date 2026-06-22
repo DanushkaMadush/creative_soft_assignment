@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Box,
@@ -61,18 +62,12 @@ function toBooleanFilter(value: FilterValue): boolean | undefined {
 export default function ManageFarms() {
   const navigate = useNavigate();
 
-  const [farms, setFarms] = useState<FishFarmResponse[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [hasBarge, setHasBarge] = useState<FilterValue>("all");
   const [status, setStatus] = useState<FilterValue>("all");
   const [pageNumber, setPageNumber] = useState(1);
   const [pageSize, setPageSize] = useState(6);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-
-  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -83,33 +78,31 @@ export default function ManageFarms() {
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
 
-  useEffect(() => {
-    fetchFarms();
-  }, [debouncedSearchTerm, hasBarge, status, pageNumber, pageSize]);
+  const queryParams: FishFarmQuery = useMemo(
+    () => ({
+      searchTerm: debouncedSearchTerm || undefined,
+      hasBarge: toBooleanFilter(hasBarge),
+      isActive: toBooleanFilter(status),
+      pageNumber,
+      pageSize,
+    }),
+    [debouncedSearchTerm, hasBarge, status, pageNumber, pageSize]
+  );
 
-  const fetchFarms = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  const {
+    data,
+    isLoading,
+    isError,
+    isFetching,
+    refetch,
+  } = useQuery<PagedResult<FishFarmResponse>>({
+    queryKey: ["farms", queryParams],
+    queryFn: () => fishFarmApi.getAll(queryParams),
+  });
 
-      const query: FishFarmQuery = {
-        searchTerm: debouncedSearchTerm || undefined,
-        hasBarge: toBooleanFilter(hasBarge),
-        isActive: toBooleanFilter(status),
-        pageNumber,
-        pageSize,
-      };
-
-      const result: PagedResult<FishFarmResponse> = await fishFarmApi.getAll(query);
-
-      setFarms(result.items);
-      setTotalCount(result.totalCount);
-    } catch {
-      setError("Failed to load farms. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const farms = data?.items ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const handleFilterChange = (
     setter: React.Dispatch<React.SetStateAction<FilterValue>>,
@@ -124,7 +117,11 @@ export default function ManageFarms() {
       <Stack
         direction={{ xs: "column", sm: "row" }}
         spacing={2}
-        sx={{ mb: 3, justifyContent: "space-between", alignItems: { xs: "stretch", sm: "center" } }}
+        sx={{
+          mb: 3,
+          justifyContent: "space-between",
+          alignItems: { xs: "stretch", sm: "center" },
+        }}
       >
         <Box>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -200,27 +197,33 @@ export default function ManageFarms() {
         </FormControl>
       </Stack>
 
-      {loading && (
+      {isFetching && !isLoading && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Refreshing farms...
+        </Typography>
+      )}
+
+      {isLoading && (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress />
         </Box>
       )}
 
-      {!loading && error && (
+      {!isLoading && isError && (
         <Alert
           severity="error"
           action={
-            <Button color="inherit" size="small" onClick={fetchFarms}>
+            <Button color="inherit" size="small" onClick={() => refetch()}>
               Retry
             </Button>
           }
           sx={{ mb: 3 }}
         >
-          {error}
+          Failed to load farms. Please try again.
         </Alert>
       )}
 
-      {!loading && !error && farms.length === 0 && (
+      {!isLoading && !isError && farms.length === 0 && (
         <Box sx={{ textAlign: "center", py: 8 }}>
           <Typography variant="h6">No farms found</Typography>
           <Typography color="text.secondary">
@@ -229,7 +232,7 @@ export default function ManageFarms() {
         </Box>
       )}
 
-      {!loading && !error && farms.length > 0 && (
+      {!isLoading && !isError && farms.length > 0 && (
         <>
           <Grid container spacing={3}>
             {farms.map((farm) => (
@@ -279,7 +282,11 @@ export default function ManageFarms() {
                     )}
 
                     <CardContent sx={{ flexGrow: 1, width: "100%" }}>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }} gutterBottom>
+                      <Typography
+                        variant="h6"
+                        sx={{ fontWeight: 700 }}
+                        gutterBottom
+                      >
                         {farm.name}
                       </Typography>
 
@@ -293,7 +300,11 @@ export default function ManageFarms() {
                         Number of cages: {farm.numberOfCages}
                       </Typography>
 
-                      <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
+                      <Stack
+                        direction="row"
+                        spacing={1}
+                        sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}
+                      >
                         <Chip
                           label={farm.hasBarge ? "Has Barge" : "No Barge"}
                           color={farm.hasBarge ? "primary" : "default"}
@@ -305,18 +316,6 @@ export default function ManageFarms() {
                           size="small"
                         />
                       </Stack>
-
-                      {/* <Button
-                        fullWidth
-                        variant="outlined"
-                        startIcon={<GroupAddIcon />}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(`/farms/${farm.id}/add-employees`);
-                        }}
-                      >
-                        Add Employees
-                      </Button> */}
                     </CardContent>
                   </CardActionArea>
                 </Card>
