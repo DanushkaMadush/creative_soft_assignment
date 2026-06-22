@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Box,
@@ -23,7 +24,7 @@ import { roleApi } from "../../api/role.api";
 import { fishFarmApi } from "../../api/fishFarm.api";
 import type { FishFarmResponse } from "../../types/fishFarm.types";
 
-interface EmployeeFormState {
+interface EmployeeFormValues {
   fishFarmId: string;
   roleId: string;
   name: string;
@@ -33,17 +34,7 @@ interface EmployeeFormState {
   image: File | null;
 }
 
-interface EmployeeFormErrors {
-  fishFarmId?: string;
-  roleId?: string;
-  name?: string;
-  email?: string;
-  age?: string;
-  certifiedUntil?: string;
-  image?: string;
-}
-
-const initialForm: EmployeeFormState = {
+const defaultValues: EmployeeFormValues = {
   fishFarmId: "",
   roleId: "",
   name: "",
@@ -56,120 +47,116 @@ const initialForm: EmployeeFormState = {
 function AddNewEmployee() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState<EmployeeFormState>(initialForm);
-  const [errors, setErrors] = useState<EmployeeFormErrors>({});
-  const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [roles, setRoles] = useState<Role[]>([]);
   const [fishFarms, setFishFarms] = useState<FishFarmResponse[]>([]);
+  const [imagePreview, setImagePreview] = useState("");
 
-  const imagePreview = form.image ? URL.createObjectURL(form.image) : "";
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<EmployeeFormValues>({
+    defaultValues,
+    mode: "onBlur",
+  });
+
+  const selectedImage = watch("image");
 
   useEffect(() => {
     const loadRoles = async () => {
-        try {
-            const data = await roleApi.getAll();
-            setRoles(data);
-        } catch (error) {
-            setErrorMessage("Failed to load roles. Please try again.");
-        }
-    }
+      try {
+        const data = await roleApi.getAll();
+        setRoles(data);
+      } catch {
+        setErrorMessage("Failed to load roles. Please try again.");
+      }
+    };
+
     loadRoles();
   }, []);
 
   useEffect(() => {
     const loadFishFarms = async () => {
-        try {
-            const result = await fishFarmApi.getAll({
-                isActive: true,
-                pageNumber: 1,
-                pageSize: 100,
-            });
-            setFishFarms(result.items);
-        } catch (error) {
-            setErrorMessage("Failed to load fish farms. Please try again.");
-        }
-    }
+      try {
+        const result = await fishFarmApi.getAll({
+          isActive: true,
+          pageNumber: 1,
+          pageSize: 100,
+        });
+
+        setFishFarms(result.items);
+      } catch {
+        setErrorMessage("Failed to load fish farms. Please try again.");
+      }
+    };
+
     loadFishFarms();
   }, []);
 
-  const validate = () => {
-    const nextErrors: EmployeeFormErrors = {};
+  const handleImageChange = (file: File | null) => {
+    if (!file) return;
 
-    if (!form.fishFarmId) nextErrors.fishFarmId = "Fish farm is required.";
-    if (!form.roleId) nextErrors.roleId = "Role is required.";
-    if (!form.name.trim()) nextErrors.name = "Name is required.";
-
-    if (!form.email.trim()) {
-      nextErrors.email = "Email is required.";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      nextErrors.email = "Enter a valid email address.";
+    if (!file.type.startsWith("image/")) {
+      setValue("image", null, {
+        shouldValidate: true,
+      });
+      setImagePreview("");
+      return;
     }
 
-    const ageNumber = Number(form.age);
-    if (!form.age) {
-      nextErrors.age = "Age is required.";
-    } else if (Number.isNaN(ageNumber) || ageNumber < 18 || ageNumber > 100) {
-      nextErrors.age = "Age must be between 18 and 100.";
-    }
+    setValue("image", file, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
-    if (!form.certifiedUntil) {
-      nextErrors.certifiedUntil = "Certified until date is required.";
-    }
-
-    if (form.image && !form.image.type.startsWith("image/")) {
-      nextErrors.image = "Only image files are allowed.";
-    }
-
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    setImagePreview(URL.createObjectURL(file));
   };
 
   const handleReset = () => {
-    setForm(initialForm);
-    setErrors({});
+    reset(defaultValues);
+    setImagePreview("");
     setSuccessMessage("");
     setErrorMessage("");
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
+  const onSubmit = async (data: EmployeeFormValues) => {
     setSuccessMessage("");
     setErrorMessage("");
 
-    if (!validate()) return;
-
     const formData = new FormData();
-    formData.append("FishFarmId", form.fishFarmId);
-    formData.append("RoleId", form.roleId);
-    formData.append("Name", form.name);
-    formData.append("Email", form.email);
-    formData.append("Age", String(form.age));
-    formData.append("CertifiedUntil", form.certifiedUntil);
+    formData.append("FishFarmId", data.fishFarmId);
+    formData.append("RoleId", data.roleId);
+    formData.append("Name", data.name.trim());
+    formData.append("Email", data.email.trim());
+    formData.append("Age", data.age);
+    formData.append("CertifiedUntil", data.certifiedUntil);
 
-    if (form.image) {
-      formData.append("Image", form.image);
+    if (data.image) {
+      formData.append("Image", data.image);
     }
 
     try {
-      setSubmitting(true);
       await employeeApi.create(formData);
+
       setSuccessMessage("Employee created successfully.");
+
       setTimeout(() => {
         navigate("/employees");
       }, 800);
     } catch {
       setErrorMessage("Failed to create employee. Please try again.");
-    } finally {
-      setSubmitting(false);
     }
   };
 
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 3, md: 5} }}>
-      <Paper elevation={3} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 3, }}>
+    <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
+      <Paper elevation={3} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 3 }}>
         <Stack spacing={3}>
           <Box>
             <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -180,18 +167,24 @@ function AddNewEmployee() {
           {successMessage && <Alert severity="success">{successMessage}</Alert>}
           {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
 
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ maxWidth: 600, mx: "auto", width: "100%" }}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            sx={{ maxWidth: 600, mx: "auto", width: "100%" }}
+          >
             <Grid container spacing={2.5}>
               <Grid size={12}>
                 <TextField
                   fullWidth
                   label="Name"
-                  value={form.name}
                   error={Boolean(errors.name)}
-                  helperText={errors.name}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, name: e.target.value }))
-                  }
+                  helperText={errors.name?.message}
+                  {...register("name", {
+                    required: "Name is required.",
+                    validate: (value) =>
+                      value.trim().length > 0 || "Name is required.",
+                  })}
                 />
               </Grid>
 
@@ -200,12 +193,15 @@ function AddNewEmployee() {
                   fullWidth
                   label="Email"
                   type="email"
-                  value={form.email}
                   error={Boolean(errors.email)}
-                  helperText={errors.email}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, email: e.target.value }))
-                  }
+                  helperText={errors.email?.message}
+                  {...register("email", {
+                    required: "Email is required.",
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: "Enter a valid email address.",
+                    },
+                  })}
                 />
               </Grid>
 
@@ -214,60 +210,72 @@ function AddNewEmployee() {
                   fullWidth
                   label="Age"
                   type="number"
-                  value={form.age}
                   error={Boolean(errors.age)}
-                  helperText={errors.age}
-                //   inputProps={{ min: 18, max: 100 }}
-                  onChange={(e) =>
-                    setForm((prev) => ({ ...prev, age: e.target.value }))
-                  }
+                  helperText={errors.age?.message}
+                  slotProps={{
+                    htmlInput: { min: 18, max: 100 },
+                  }}
+                  {...register("age", {
+                    required: "Age is required.",
+                    validate: (value) => {
+                      const ageNumber = Number(value);
+
+                      if (Number.isNaN(ageNumber)) {
+                        return "Age must be a valid number.";
+                      }
+
+                      if (ageNumber < 18 || ageNumber > 100) {
+                        return "Age must be between 18 and 100.";
+                      }
+
+                      return true;
+                    },
+                  })}
                 />
               </Grid>
 
               <Grid size={12}>
-                <FormControl fullWidth error={Boolean(errors.roleId)}>
-                  <InputLabel>Role</InputLabel>
-                  <Select
-                    label="Role"
-                    value={form.roleId}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        roleId: e.target.value,
-                      }))
-                    }
-                  >
-                    {roles.map((role) => (
-                      <MenuItem key={role.id} value={role.id}>
-                        {role.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText>{errors.roleId}</FormHelperText>
-                </FormControl>
+                <Controller
+                  name="roleId"
+                  control={control}
+                  rules={{ required: "Role is required." }}
+                  render={({ field }) => (
+                    <FormControl fullWidth error={Boolean(errors.roleId)}>
+                      <InputLabel>Role</InputLabel>
+                      <Select label="Role" {...field}>
+                        {roles.map((role) => (
+                          <MenuItem key={role.id} value={role.id}>
+                            {role.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>{errors.roleId?.message}</FormHelperText>
+                    </FormControl>
+                  )}
+                />
               </Grid>
 
               <Grid size={12}>
-                <FormControl fullWidth error={Boolean(errors.fishFarmId)}>
-                  <InputLabel>Fish Farm</InputLabel>
-                  <Select
-                    label="Fish Farm"
-                    value={form.fishFarmId}
-                    onChange={(e) =>
-                      setForm((prev) => ({
-                        ...prev,
-                        fishFarmId: e.target.value,
-                      }))
-                    }
-                  >
-                    {fishFarms.map((farm) => (
-                      <MenuItem key={farm.id} value={farm.id}>
-                        {farm.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  <FormHelperText>{errors.fishFarmId}</FormHelperText>
-                </FormControl>
+                <Controller
+                  name="fishFarmId"
+                  control={control}
+                  rules={{ required: "Fish farm is required." }}
+                  render={({ field }) => (
+                    <FormControl fullWidth error={Boolean(errors.fishFarmId)}>
+                      <InputLabel>Fish Farm</InputLabel>
+                      <Select label="Fish Farm" {...field}>
+                        {fishFarms.map((farm) => (
+                          <MenuItem key={farm.id} value={farm.id}>
+                            {farm.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      <FormHelperText>
+                        {errors.fishFarmId?.message}
+                      </FormHelperText>
+                    </FormControl>
+                  )}
+                />
               </Grid>
 
               <Grid size={12}>
@@ -275,70 +283,82 @@ function AddNewEmployee() {
                   fullWidth
                   label="Employee Certified Until"
                   type="date"
-                  value={form.certifiedUntil}
                   error={Boolean(errors.certifiedUntil)}
-                  helperText={errors.certifiedUntil}
+                  helperText={errors.certifiedUntil?.message}
                   slotProps={{ inputLabel: { shrink: true } }}
-                  onChange={(e) =>
-                    setForm((prev) => ({
-                      ...prev,
-                      certifiedUntil: e.target.value,
-                    }))
-                  }
+                  {...register("certifiedUntil", {
+                    required: "Certified until date is required.",
+                  })}
                 />
               </Grid>
 
               <Grid size={12}>
                 <Box
-                    sx={{
-                      border: "1px dashed",
-                      borderColor: errors.image ? "error.main" : "divider",
-                      borderRadius: 2,
-                      p: 2.5,
-                      bgcolor: "background.default",
-                    }}
-                  >
-                <Stack spacing={1.5} sx={{ alignItems: "flex-start"}}>
+                  sx={{
+                    border: "1px dashed",
+                    borderColor: errors.image ? "error.main" : "divider",
+                    borderRadius: 2,
+                    p: 2.5,
+                    bgcolor: "background.default",
+                  }}
+                >
+                  <Stack spacing={1.5} sx={{ alignItems: "flex-start" }}>
                     <Typography variant="subtitle2">Employee Image</Typography>
-                  <Button variant="outlined" component="label">
-                    Choose Image
-                    <input
-                      hidden
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0] ?? null;
-                        setForm((prev) => ({ ...prev, image: file }));
-                      }}
-                    />
-                  </Button>
 
-                  {form.image && (
-                    <>
-                      <Typography variant="body2">
-                        Selected file: {form.image.name}
-                      </Typography>
-
-                      <Box
-                        component="img"
-                        src={imagePreview}
-                        alt="Employee preview"
-                        sx={{
-                          width: 160,
-                          height: 160,
-                          objectFit: "cover",
-                          borderRadius: 2,
-                          border: "1px solid",
-                          borderColor: "divider",
-                        }}
+                    <Button variant="outlined" component="label">
+                      Choose Image
+                      <input
+                        hidden
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          handleImageChange(e.target.files?.[0] ?? null)
+                        }
                       />
-                    </>
-                  )}
+                    </Button>
 
-                  {errors.image && (
-                    <FormHelperText error>{errors.image}</FormHelperText>
-                  )}
-                </Stack>
+                    <input
+                      type="hidden"
+                      {...register("image", {
+                        validate: (file) => {
+                          if (!file) return true;
+
+                          return (
+                            file.type.startsWith("image/") ||
+                            "Only image files are allowed."
+                          );
+                        },
+                      })}
+                    />
+
+                    {selectedImage && (
+                      <>
+                        <Typography variant="body2">
+                          Selected file: {selectedImage.name}
+                        </Typography>
+
+                        <Box
+                          component="img"
+                          src={imagePreview}
+                          alt="Employee preview"
+                          sx={{
+                            width: 160,
+                            height: 160,
+                            objectFit: "cover",
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        />
+                      </>
+                    )}
+
+                    {errors.image && (
+                      <FormHelperText error>
+                        {errors.image.message}
+                      </FormHelperText>
+                    )}
+                  </Stack>
                 </Box>
               </Grid>
 
@@ -346,7 +366,10 @@ function AddNewEmployee() {
                 <Stack
                   direction={{ xs: "column", sm: "row" }}
                   spacing={2}
-                  sx={{ mt: 2, justifyContent: { xs: "center", sm: "space-between" } }}
+                  sx={{
+                    mt: 2,
+                    justifyContent: { xs: "center", sm: "space-between" },
+                  }}
                 >
                   <Button
                     variant="outlined"
@@ -360,7 +383,7 @@ function AddNewEmployee() {
                       variant="outlined"
                       type="button"
                       onClick={handleReset}
-                      disabled={submitting}
+                      disabled={isSubmitting}
                     >
                       Reset
                     </Button>
@@ -368,9 +391,11 @@ function AddNewEmployee() {
                     <Button
                       variant="contained"
                       type="submit"
-                      disabled={submitting}
+                      disabled={isSubmitting}
                       startIcon={
-                        submitting ? <CircularProgress size={18} /> : undefined
+                        isSubmitting ? (
+                          <CircularProgress size={18} />
+                        ) : undefined
                       }
                     >
                       Save Employee
