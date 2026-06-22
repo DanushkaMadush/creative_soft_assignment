@@ -51,7 +51,7 @@ const ManageEmployees = () => {
   const [status, setStatus] = useState<"all" | "active" | "inactive">("all");
 
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(6);
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [fishFarms, setFishFarms] = useState<FishFarmResponse[]>([]);
@@ -65,7 +65,7 @@ const ManageEmployees = () => {
     const timer = window.setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setPageNumber(1);
-    }, 500);
+    }, 800);
 
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
