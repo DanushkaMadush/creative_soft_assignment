@@ -10,17 +10,36 @@ namespace backend.Services.Implementations
     {
         private readonly AppDbContext _context;
         private readonly IImageUploadService _imageUploadService;
+        private readonly ICacheService _cacheService;
 
-        public FishFarmService(AppDbContext context, IImageUploadService imageUploadService)
+        private const string FishFarmCacheVersionKey = "fishfarms_cache_version";
+        private const string FishFarmGetAllCachePrefix = "fishfarms_getall_";
+        private const string DashboardTotalFishFarmsKey = "dashboard_total_fishfarms";
+        private const string DashboardFishFarmLocationsKey = "dashboard_fishfarm_locations";
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+        public FishFarmService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService)
         {
             _context = context;
             _imageUploadService = imageUploadService;
+            _cacheService = cacheService;
         }
 
         public async Task<PagedResultDto<FishFarmResponseDto>> GetAllAsync(FishFarmQueryDto query)
         {
+            var cacheKey = BuildGetAllCacheKey(query);
+
+            var cachedResult =
+                await _cacheService.GetAsync<PagedResultDto<FishFarmResponseDto>>(cacheKey);
+
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var fishFarmsQuery = _context.FishFarms
                 .Include(x => x.Images)
+                .AsNoTracking()
                 .AsQueryable();
 
             fishFarmsQuery = fishFarmsQuery.Where(x => x.IsActive == query.IsActive);
@@ -57,13 +76,17 @@ namespace backend.Services.Implementations
                 })
                 .ToListAsync();
 
-            return new PagedResultDto<FishFarmResponseDto>
+            var result = new PagedResultDto<FishFarmResponseDto>
             {
                 Items = items,
                 TotalCount = totalCount,
                 PageNumber = query.PageNumber,
                 PageSize = query.PageSize
             };
+
+            _cacheService.Set(cacheKey, result, CacheDuration);
+
+            return result;
         }
 
         public async Task<FishFarmResponseDto?> GetByIdAsync(Guid id)
@@ -117,6 +140,9 @@ namespace backend.Services.Implementations
             {
                 _context.FishFarms.Add(fishFarm);
                 await _context.SaveChangesAsync();
+                _cacheService.IncrementVersion(FishFarmCacheVersionKey);
+                _cacheService.Remove(DashboardTotalFishFarmsKey);
+                _cacheService.Remove(DashboardFishFarmLocationsKey);
             }
             catch
             {
@@ -178,6 +204,8 @@ namespace backend.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+            _cacheService.IncrementVersion(FishFarmCacheVersionKey);
+            _cacheService.Remove(DashboardFishFarmLocationsKey);
             return true;
         }
 
@@ -193,6 +221,9 @@ namespace backend.Services.Implementations
             fishFarm.UpdatedBy = "system";
 
             await _context.SaveChangesAsync();
+            _cacheService.IncrementVersion(FishFarmCacheVersionKey);
+            _cacheService.Remove(DashboardTotalFishFarmsKey);
+            _cacheService.Remove(DashboardFishFarmLocationsKey);
             return true;
         }
 
@@ -217,6 +248,19 @@ namespace backend.Services.Implementations
                         .FirstOrDefault()
                 })
                 .ToListAsync();
+        }
+
+        private string BuildGetAllCacheKey(FishFarmQueryDto query)
+        {
+            var version = _cacheService.GetVersion(FishFarmCacheVersionKey);
+
+            return FishFarmGetAllCachePrefix +
+                   $"page_{query.PageNumber}_" +
+                   $"size_{query.PageSize}_" +
+                   $"search_{query.SearchTerm?.Trim().ToLower() ?? "none"}_" +
+                   $"hasbarge_{query.HasBarge?.ToString() ?? "all"}_" +
+                   $"active_{query.IsActive}_" +
+                   $"v_{version}";
         }
     }
 }

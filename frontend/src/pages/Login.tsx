@@ -28,8 +28,7 @@ export default function Login() {
 
     setError("");
 
-    // Mock login
-    navigate("/");
+    navigate("/home");
   };
 
   return (

@@ -11,19 +11,37 @@ namespace backend.Services.Implementations
     {
         private readonly AppDbContext _context;
         private readonly IImageUploadService _imageUploadService;
+        private readonly ICacheService _cacheService;
 
-        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService)
+        private const string EmployeeCacheVersionKey = "employees_cache_version";
+        private const string EmployeeGetAllCachePrefix = "employees_getall_";
+        private const string DashboardTotalEmployeesKey = "dashboard_total_employees";
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
+        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService)
         {
             _context = context;
             _imageUploadService = imageUploadService;
+            _cacheService = cacheService;
         }
 
         public async Task<PagedResultDto<EmployeeResponseDto>> GetAllAsync(EmployeeQueryDto query)
         {
+            var cacheKey = BuildGetAllCacheKey(query);
+
+            var cachedResult =
+                await _cacheService.GetAsync<PagedResultDto<EmployeeResponseDto>>(cacheKey);
+
+            if (cachedResult != null)
+            {
+                return cachedResult;
+            }
+
             var employeeQuery = _context.Employees
                 .Include(x => x.FishFarm)
                 .Include(x => x.Role)
                 .Include(x => x.Images)
+                .AsNoTracking()
                 .AsQueryable();
 
             employeeQuery = employeeQuery.Where(x => x.IsActive == query.IsActive);
@@ -69,13 +87,17 @@ namespace backend.Services.Implementations
                 })
                 .ToListAsync();
 
-            return new PagedResultDto<EmployeeResponseDto>
+            var result = new PagedResultDto<EmployeeResponseDto>
             {
                 Items = items,
                 TotalCount = totalCount,
                 PageNumber = query.PageNumber,
                 PageSize = query.PageSize
             };
+
+            _cacheService.Set(cacheKey, result, CacheDuration);
+
+            return result;
         }
 
         public async Task<EmployeeResponseDto?> GetByIdAsync(Guid id)
@@ -153,6 +175,8 @@ namespace backend.Services.Implementations
             {
                 _context.Employees.Add(employee);
                 await _context.SaveChangesAsync();
+                _cacheService.IncrementVersion(EmployeeCacheVersionKey);
+                _cacheService.Remove(DashboardTotalEmployeesKey);
             }
             catch
             {
@@ -220,6 +244,7 @@ namespace backend.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+            _cacheService.IncrementVersion(EmployeeCacheVersionKey);
             return true;
         }
 
@@ -235,7 +260,23 @@ namespace backend.Services.Implementations
             employee.UpdatedBy = "system";
 
             await _context.SaveChangesAsync();
+            _cacheService.IncrementVersion(EmployeeCacheVersionKey);
+            _cacheService.Remove(DashboardTotalEmployeesKey);
             return true;
+        }
+
+        private string BuildGetAllCacheKey(EmployeeQueryDto query)
+        {
+            var version = _cacheService.GetVersion(EmployeeCacheVersionKey);
+
+            return EmployeeGetAllCachePrefix +
+                   $"page_{query.PageNumber}_" +
+                   $"size_{query.PageSize}_" +
+                   $"search_{query.SearchTerm?.Trim().ToLower() ?? "none"}_" +
+                   $"fishfarm_{query.FishFarmId?.ToString() ?? "all"}_" +
+                   $"role_{query.RoleId?.ToString() ?? "all"}_" +
+                   $"active_{query.IsActive}_" +
+                   $"v_{version}";
         }
     }
 }
