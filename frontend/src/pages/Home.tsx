@@ -1,40 +1,39 @@
-import { useEffect, useState } from "react";
 import {
   Box,
   CircularProgress,
   Container,
   Grid,
   Typography,
+  Alert,
 } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboardApi";
 import type { FishFarmLocation } from "../types/dashboard.types";
 import DashboardStatCard from "../components/dashboard/DashboardCard";
 
+interface DashboardData {
+  totalFishFarms: number;
+  totalEmployees: number;
+  locations: FishFarmLocation[];
+}
+
 export default function HomePage() {
-  const [totalFishFarms, setTotalFishFarms] = useState(0);
-  const [totalEmployees, setTotalEmployees] = useState(0);
-  const [locations, setLocations] = useState<FishFarmLocation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading, isError, refetch } = useQuery<DashboardData>({
+    queryKey: ["dashboard"],
+    queryFn: async () => {
+      const [fishFarms, employees, farmLocations] = await Promise.all([
+        dashboardApi.getTotalFishFarms(),
+        dashboardApi.getTotalEmployees(),
+        dashboardApi.getFishFarmLocations(),
+      ]);
 
-  useEffect(() => {
-    const loadDashboard = async () => {
-      try {
-        const [fishFarms, employees, farmLocations] = await Promise.all([
-          dashboardApi.getTotalFishFarms(),
-          dashboardApi.getTotalEmployees(),
-          dashboardApi.getFishFarmLocations(),
-        ]);
-
-        setTotalFishFarms(fishFarms.total);
-        setTotalEmployees(employees.total);
-        setLocations(farmLocations);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboard();
-  }, []);
+      return {
+        totalFishFarms: fishFarms.total,
+        totalEmployees: employees.total,
+        locations: farmLocations,
+      };
+    },
+  });
 
   return (
     <Box>
@@ -83,11 +82,35 @@ export default function HomePage() {
       </Box>
 
       <Container maxWidth="lg" sx={{ py: 5 }}>
-        {loading ? (
+        {isLoading && (
           <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
             <CircularProgress />
           </Box>
-        ) : (
+        )}
+
+        {isError && (
+          <Alert
+            severity="error"
+            action={
+              <Typography
+                component="button"
+                onClick={() => refetch()}
+                sx={{
+                  border: 0,
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Retry
+              </Typography>
+            }
+          >
+            Failed to load dashboard data.
+          </Alert>
+        )}
+
+        {!isLoading && !isError && data && (
           <>
             <Grid
               container
@@ -97,7 +120,7 @@ export default function HomePage() {
               <Grid size={{ xs: 8, sm: 4, md: 2 }}>
                 <DashboardStatCard
                   text="Total Fish Farms"
-                  value={totalFishFarms}
+                  value={data.totalFishFarms}
                   color="#0284c7"
                 />
               </Grid>
@@ -105,14 +128,14 @@ export default function HomePage() {
               <Grid size={{ xs: 8, sm: 4, md: 2 }}>
                 <DashboardStatCard
                   text="Total Employees"
-                  value={totalEmployees}
+                  value={data.totalEmployees}
                   color="#16a34a"
                 />
               </Grid>
             </Grid>
 
             <Box>
-              <Typography variant="h5" sx={{ fontweight: 700, mb: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
                 Fish Farm Locations
               </Typography>
 
@@ -139,7 +162,7 @@ export default function HomePage() {
                   }}
                 />
 
-                {locations.map((location, index) => (
+                {data.locations.map((location, index) => (
                   <Box
                     key={location.fishFarmId}
                     sx={{
