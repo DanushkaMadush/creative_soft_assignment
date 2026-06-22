@@ -67,7 +67,7 @@ export default function ManageFarms() {
   const [hasBarge, setHasBarge] = useState<FilterValue>("all");
   const [status, setStatus] = useState<FilterValue>("all");
   const [pageNumber, setPageNumber] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(6);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,7 +78,7 @@ export default function ManageFarms() {
     const timer = window.setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
       setPageNumber(1);
-    }, 500);
+    }, 800);
 
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
