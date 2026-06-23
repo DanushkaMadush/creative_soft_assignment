@@ -11,6 +11,7 @@ namespace backend.Services.Implementations
         private readonly AppDbContext _context;
         private readonly IImageUploadService _imageUploadService;
         private readonly ICacheService _cacheService;
+        private readonly ILogger<FishFarmService> _logger;
 
         private const string FishFarmCacheVersionKey = "fishfarms_cache_version";
         private const string FishFarmGetAllCachePrefix = "fishfarms_getall_";
@@ -18,11 +19,12 @@ namespace backend.Services.Implementations
         private const string DashboardFishFarmLocationsKey = "dashboard_fishfarm_locations";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public FishFarmService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService)
+        public FishFarmService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService, ILogger<FishFarmService> logger)
         {
             _context = context;
             _imageUploadService = imageUploadService;
             _cacheService = cacheService;
+            _logger = logger;
         }
 
         public async Task<PagedResultDto<FishFarmResponseDto>> GetAllAsync(FishFarmQueryDto query)
@@ -34,8 +36,11 @@ namespace backend.Services.Implementations
 
             if (cachedResult != null)
             {
+                _logger.LogDebug("Fish farms cache hit. CacheKey: {CacheKey}", cacheKey);
                 return cachedResult;
             }
+
+            _logger.LogDebug("Fish farms cache miss. CacheKey: {CacheKey}", cacheKey);
 
             var fishFarmsQuery = _context.FishFarms
                 .Include(x => x.Images)
@@ -84,6 +89,11 @@ namespace backend.Services.Implementations
                 PageSize = query.PageSize
             };
 
+            _logger.LogInformation("Retrieved fish farms. PageNumber: {PageNumber}, PageSize: {PageSize}, TotalCount: {TotalCount}",
+                query.PageNumber,
+                query.PageSize,
+                totalCount);
+
             _cacheService.Set(cacheKey, result, CacheDuration);
 
             return result;
@@ -91,7 +101,7 @@ namespace backend.Services.Implementations
 
         public async Task<FishFarmResponseDto?> GetByIdAsync(Guid id)
         {
-            return await _context.FishFarms
+            var result = await _context.FishFarms
                 .Include(x => x.Images)
                 .Where(x => x.Id == id)
                 .Select(x => new FishFarmResponseDto
@@ -108,6 +118,13 @@ namespace backend.Services.Implementations
                         .FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
+
+            if (result == null)
+            {
+                _logger.LogWarning("Fish farm not found. FishFarmId: {FishFarmId}", id);
+            }
+
+            return result;
         }
 
         public async Task<FishFarmResponseDto> CreateAsync(FishFarmCreateDto dto)
@@ -140,12 +157,16 @@ namespace backend.Services.Implementations
             {
                 _context.FishFarms.Add(fishFarm);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Fish farm created successfully. FishFarmId: {FishFarmId}", fishFarm.Id);
+
                 _cacheService.IncrementVersion(FishFarmCacheVersionKey);
                 _cacheService.Remove(DashboardTotalFishFarmsKey);
                 _cacheService.Remove(DashboardFishFarmLocationsKey);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to create fish farm. Uploaded image will be deleted. FileName: {FileName}", fileName);
                 _imageUploadService.DeleteFishFarmImage(fileName);
                 throw;
             }
@@ -204,6 +225,7 @@ namespace backend.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Fish farm updated successfully. FishFarmId: {FishFarmId}", id);
             _cacheService.IncrementVersion(FishFarmCacheVersionKey);
             _cacheService.Remove(DashboardFishFarmLocationsKey);
             return true;
@@ -221,6 +243,7 @@ namespace backend.Services.Implementations
             fishFarm.UpdatedBy = "system";
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Soft deleting fish farm. FishFarmId: {FishFarmId}", id);
             _cacheService.IncrementVersion(FishFarmCacheVersionKey);
             _cacheService.Remove(DashboardTotalFishFarmsKey);
             _cacheService.Remove(DashboardFishFarmLocationsKey);
