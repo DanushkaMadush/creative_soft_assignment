@@ -6,6 +6,7 @@ import type { FishFarmCreateRequest } from "../../types/fishFarm.types";
 import { fishFarmApi } from "../../api/fishFarm.api";
 import type { FarmFormValues } from "../../types/employee.types";
 import FarmForm from "./FarmForm";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const defaultValues: FarmFormValues = {
   name: "",
@@ -18,6 +19,7 @@ const defaultValues: FarmFormValues = {
 
 export default function AddNewFarm() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [successMessage, setSuccessMessage] = useState("");
   const [apiError, setApiError] = useState<string | null>(null);
@@ -25,6 +27,21 @@ export default function AddNewFarm() {
   const form = useForm<FarmFormValues>({
     defaultValues,
     mode: "onBlur",
+  });
+
+  const createFarmMutation = useMutation({
+    mutationFn: fishFarmApi.create,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["farms"] });
+      setSuccessMessage("Farm created successfully.");
+
+      setTimeout(() => {
+        navigate("/farms");
+      }, 500);
+    },
+    onError: () => {
+      setApiError("Failed to create farm.");
+    },
   });
 
   const handleReset = () => {
@@ -54,17 +71,7 @@ export default function AddNewFarm() {
       image: data.image,
     };
 
-    try {
-      await fishFarmApi.create(payload);
-      setSuccessMessage("Farm created successfully.");
-
-      setTimeout(() => {
-        navigate("/farms");
-      }, 800);
-    } catch (err) {
-      console.error(err);
-      setApiError("Failed to create farm.");
-    }
+    createFarmMutation.mutate(payload);
   };
 
   return (

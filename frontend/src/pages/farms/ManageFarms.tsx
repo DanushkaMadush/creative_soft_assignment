@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Box,
@@ -71,6 +71,8 @@ export default function ManageFarms() {
   } = useQuery<PagedResult<FishFarmResponse>>({
     queryKey: ["farms", queryParams],
     queryFn: () => fishFarmApi.getAll(queryParams),
+    placeholderData: keepPreviousData,
+    staleTime: 30000,
   });
 
   const farms = data?.items ?? [];
