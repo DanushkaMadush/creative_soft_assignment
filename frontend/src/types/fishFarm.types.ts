@@ -83,3 +83,12 @@ export  interface PagedResult<T> {
 }
 
 export type FilterValue = "all" | "true" | "false";
+
+export type DeleteFarmDialogProps = {
+  open: boolean;
+  farm: FishFarmResponse;
+  loading: boolean;
+  error: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+};
