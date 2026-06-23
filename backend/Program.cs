@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using backend.Data;
 using backend.Services.Interfaces;
 using backend.Services.Implementations;
+using backend.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +35,8 @@ builder.Services.AddScoped<ICacheService, CacheService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+app.UseMiddleware<GlobalExceptionMiddleware>();
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -44,6 +46,8 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+app.UseRouting();
 
 app.UseCors("AllowAll");
 
