@@ -61,7 +61,7 @@ export default function HomePage() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg, rgba(2,6,23,0.68), rgba(2,6,23,0.35))",
+              "linear-gradient(180deg, rgba(2,6,23,0.7), rgba(2,6,23,0.6))",
           }}
         />
 
