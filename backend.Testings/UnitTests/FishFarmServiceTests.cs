@@ -6,6 +6,7 @@ using backend.Services.Interfaces;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 
 namespace backend.Testings.UnitTests;
@@ -16,6 +17,8 @@ public class FishFarmServiceTests
     private AppDbContext _context = null!;
     private Mock<IImageUploadService> _imageUploadServiceMock = null!;
     private FishFarmService _service = null!;
+    private Mock<ICacheService> _cacheServiceMock = null!;
+    private Mock<ILogger<FishFarmService>> _loggerMock = null!;
 
     [SetUp]
     public void Setup()
@@ -26,10 +29,14 @@ public class FishFarmServiceTests
 
         _context = new AppDbContext(options);
         _imageUploadServiceMock = new Mock<IImageUploadService>();
+        _cacheServiceMock = new Mock<ICacheService>();
+        _loggerMock = new Mock<ILogger<FishFarmService>>();
 
         _service = new FishFarmService(
             _context,
-            _imageUploadServiceMock.Object);
+            _imageUploadServiceMock.Object,
+            _cacheServiceMock.Object,
+            _loggerMock.Object);
     }
 
     [TearDown]
