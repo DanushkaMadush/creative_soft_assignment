@@ -72,6 +72,7 @@ const EmployeeForm = ({
       <Grid container spacing={2.5}>
         <Grid size={12}>
           <TextField
+            sx={{ mt: 2 }}
             fullWidth
             label="Name"
             disabled={isLoading}
