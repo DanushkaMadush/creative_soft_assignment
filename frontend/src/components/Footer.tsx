@@ -20,7 +20,7 @@ const Footer = () => {
           direction={{ xs: "column", sm: "row" }}
           spacing={1}
           sx={{
-            justifyContent: "space-between",
+            justifyContent: "center",
             alignItems: "center",
             textAlign: "center",
           }}
