@@ -55,3 +55,31 @@ export interface FishFarmEmployeeResponse {
   isActive: boolean;
   imageUrl?: string | null;
 }
+
+export interface FishFarmResponse {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  numberOfCages: number;
+  hasBarge: boolean;
+  isActive: boolean;
+  imageUrl?: string | null;
+}
+
+export interface FishFarmQuery {
+  searchTerm?: string;
+  hasBarge?: boolean;
+  isActive?: boolean;
+  pageNumber?: number;
+  pageSize?: number;
+}
+
+export  interface PagedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+}
+
+export type FilterValue = "all" | "true" | "false";

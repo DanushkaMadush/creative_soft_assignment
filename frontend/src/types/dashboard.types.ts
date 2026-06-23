@@ -8,3 +8,9 @@ export interface FishFarmLocation {
   latitude: number;
   longitude: number;
 }
+
+export interface DashboardData {
+  totalFishFarms: number;
+  totalEmployees: number;
+  locations: FishFarmLocation[];
+}

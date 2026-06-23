@@ -16,15 +16,7 @@ import {
 } from "@mui/material";
 import type { FishFarmCreateRequest } from "../../types/fishFarm.types";
 import { fishFarmApi } from "../../api/fishFarm.api";
-
-interface FarmFormValues {
-  name: string;
-  latitude: string;
-  longitude: string;
-  numberOfCages: string;
-  hasBarge: boolean;
-  image: File | null;
-}
+import type { FarmFormValues } from "../../types/employee.types";
 
 const defaultValues: FarmFormValues = {
   name: "",

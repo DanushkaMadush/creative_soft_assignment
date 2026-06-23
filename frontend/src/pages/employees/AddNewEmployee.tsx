@@ -23,16 +23,7 @@ import type { Role } from "../../types/role.types";
 import { roleApi } from "../../api/role.api";
 import { fishFarmApi } from "../../api/fishFarm.api";
 import type { FishFarmResponse } from "../../types/fishFarm.types";
-
-interface EmployeeFormValues {
-  fishFarmId: string;
-  roleId: string;
-  name: string;
-  email: string;
-  age: string;
-  certifiedUntil: string;
-  image: File | null;
-}
+import type { EmployeeFormValues } from "../../types/employee.types";
 
 const defaultValues: EmployeeFormValues = {
   fishFarmId: "",

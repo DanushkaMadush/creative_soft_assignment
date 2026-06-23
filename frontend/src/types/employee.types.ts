@@ -27,3 +27,22 @@ export interface PagedResponse<T> {
   pageNumber: number;
   pageSize: number;
 }
+
+export interface EmployeeFormValues {
+  fishFarmId: string;
+  roleId: string;
+  name: string;
+  email: string;
+  age: string;
+  certifiedUntil: string;
+  image: File | null;
+}
+
+export interface FarmFormValues {
+  name: string;
+  latitude: string;
+  longitude: string;
+  numberOfCages: string;
+  hasBarge: boolean;
+  image: File | null;
+}
