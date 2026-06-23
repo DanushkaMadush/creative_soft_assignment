@@ -1,15 +1,18 @@
 import {
+  Alert,
   Box,
+  Button,
   CircularProgress,
   Container,
   Grid,
+  Stack,
   Typography,
-  Alert,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboardApi";
 import DashboardStatCard from "../components/dashboard/DashboardCard";
 import type { DashboardData } from "../types/dashboard.types";
+import { MapContainer, TileLayer } from "react-leaflet";
 
 export default function HomePage() {
   const { data, isLoading, isError, refetch } = useQuery<DashboardData>({
@@ -30,22 +33,25 @@ export default function HomePage() {
   });
 
   return (
-    <Box>
+    <Box sx={{ bgcolor: "background.default", minHeight: "100vh" }}>
       <Box
+        component="section"
         sx={{
-          height: { xs: 280, md: 420 },
+          minHeight: { xs: 320, md: 460 },
           position: "relative",
           overflow: "hidden",
-          borderRadius: { xs: 0, md: "0 0 36px 36px" },
+          borderRadius: { xs: 0, md: "0 0 40px 40px" },
         }}
       >
         <Box
           component="img"
           src="/fish-farm-hero.jpg"
-          alt="Fish Farm"
+          alt="Fish farm landscape"
           sx={{
             width: "100%",
             height: "100%",
+            position: "absolute",
+            inset: 0,
             objectFit: "cover",
           }}
         />
@@ -54,30 +60,52 @@ export default function HomePage() {
           sx={{
             position: "absolute",
             inset: 0,
-            bgcolor: "rgba(0,0,0,0.45)",
+            background:
+              "linear-gradient(180deg, rgba(2,6,23,0.7), rgba(2,6,23,0.6))",
+          }}
+        />
+
+        <Container
+          maxWidth="lg"
+          sx={{
+            position: "relative",
+            zIndex: 1,
+            minHeight: { xs: 320, md: 460 },
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             textAlign: "center",
-            px: 2,
           }}
         >
-          <Typography
-            variant="h2"
-            sx={{
-              fontSize: { xs: "2.2rem", md: "4rem" },
-              fontWeight: 800,
-              color: "white",
-            }}
-          >
-            Fish Farm Management System
-          </Typography>
-        </Box>
+          <Stack spacing={2} sx={{ maxWidth: 820 }}>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: "2.4rem", sm: "3.2rem", md: "4.5rem" },
+                fontWeight: 800,
+                color: "common.white",
+                letterSpacing: "-0.04em",
+                lineHeight: 1.05,
+              }}
+            >
+              Fish Farm Management System
+            </Typography>
+
+            <Typography
+              sx={{
+                color: "rgba(255,255,255,0.86)",
+                fontSize: { xs: "1rem", md: "1.15rem" },
+              }}
+            >
+              Monitor farms, employees, and locations from one clean dashboard.
+            </Typography>
+          </Stack>
+        </Container>
       </Box>
 
-      <Container maxWidth="lg" sx={{ py: 5 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 4, md: 6 } }}>
         {isLoading && (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
         )}
@@ -86,18 +114,9 @@ export default function HomePage() {
           <Alert
             severity="error"
             action={
-              <Typography
-                component="button"
-                onClick={() => refetch()}
-                sx={{
-                  border: 0,
-                  background: "transparent",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
+              <Button color="inherit" size="small" onClick={() => refetch()}>
                 Retry
-              </Typography>
+              </Button>
             }
           >
             Failed to load dashboard data.
@@ -105,13 +124,9 @@ export default function HomePage() {
         )}
 
         {!isLoading && !isError && data && (
-          <>
-            <Grid
-              container
-              spacing={3}
-              sx={{ mb: 5, justifyContent: "center" }}
-            >
-              <Grid size={{ xs: 8, sm: 4, md: 2 }}>
+          <Stack spacing={5}>
+            <Grid container spacing={3} sx={{ justifyContent: "center" }}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <DashboardStatCard
                   text="Total Fish Farms"
                   value={data.totalFishFarms}
@@ -119,7 +134,7 @@ export default function HomePage() {
                 />
               </Grid>
 
-              <Grid size={{ xs: 8, sm: 4, md: 2 }}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }}>
                 <DashboardStatCard
                   text="Total Employees"
                   value={data.totalEmployees}
@@ -129,63 +144,34 @@ export default function HomePage() {
             </Grid>
 
             <Box>
-              <Typography variant="h5" sx={{ fontWeight: 700, mb: 2 }}>
+              <Typography variant="h5" sx={{ fontWeight: 800, mb: 2 }}>
                 Fish Farm Locations
               </Typography>
 
               <Box
                 sx={{
-                  height: 300,
-                  borderRadius: 4,
-                  position: "relative",
+                  height: { xs: 320, md: 420 },
+                  borderRadius: 5,
                   overflow: "hidden",
                   border: "1px solid",
                   borderColor: "divider",
-                  background:
-                    "linear-gradient(135deg, #dbeafe, #ecfeff 45%, #dcfce7)",
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+                  boxShadow: "0 18px 45px rgba(15,23,42,0.08)",
                 }}
               >
-                <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    backgroundImage:
-                      "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-                    backgroundSize: "40px 40px",
-                  }}
-                />
-
-                {data.locations.map((location, index) => (
-                  <Box
-                    key={location.fishFarmId}
-                    sx={{
-                      position: "absolute",
-                      left: `${28 + index * 18}%`,
-                      top: `${35 + index * 12}%`,
-                      transform: "translate(-50%, -50%)",
-                      textAlign: "center",
-                    }}
-                  >
-                    <Typography sx={{ fontSize: 30 }}>📍</Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        px: 1,
-                        py: 0.5,
-                        borderRadius: 2,
-                        bgcolor: "white",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {location.fishFarmName}
-                    </Typography>
-                  </Box>
-                ))}
+                <MapContainer
+                  center={[7.8731, 80.7718]}
+                  zoom={7}
+                  scrollWheelZoom={false}
+                  style={{ height: "100%", width: "100%" }}
+                >
+                  <TileLayer
+                    attribution="&copy; OpenStreetMap contributors"
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                </MapContainer>
               </Box>
             </Box>
-          </>
+          </Stack>
         )}
       </Container>
     </Box>
