@@ -12,17 +12,19 @@ namespace backend.Services.Implementations
         private readonly AppDbContext _context;
         private readonly IImageUploadService _imageUploadService;
         private readonly ICacheService _cacheService;
+        private readonly ILogger _logger;
 
         private const string EmployeeCacheVersionKey = "employees_cache_version";
         private const string EmployeeGetAllCachePrefix = "employees_getall_";
         private const string DashboardTotalEmployeesKey = "dashboard_total_employees";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService)
+        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService, ILogger logger)
         {
             _context = context;
             _imageUploadService = imageUploadService;
             _cacheService = cacheService;
+            _logger = logger;
         }
 
         public async Task<PagedResultDto<EmployeeResponseDto>> GetAllAsync(EmployeeQueryDto query)
@@ -34,6 +36,7 @@ namespace backend.Services.Implementations
 
             if (cachedResult != null)
             {
+                _logger.LogDebug("Employees cache hit. CacheKey: {CacheKey}", cacheKey);
                 return cachedResult;
             }
 
@@ -95,6 +98,8 @@ namespace backend.Services.Implementations
                 PageSize = query.PageSize
             };
 
+            _logger.LogInformation("Retrieved employees. PageNumber: {PageNumber}, PageSize: {PageSize}, TotalCount: {TotalCount}", query.PageNumber, query.PageSize, totalCount);
+
             _cacheService.Set(cacheKey, result, CacheDuration);
 
             return result;
@@ -102,7 +107,7 @@ namespace backend.Services.Implementations
 
         public async Task<EmployeeResponseDto?> GetByIdAsync(Guid id)
         {
-            return await _context.Employees
+            var result = await _context.Employees
                 .Include(x => x.FishFarm)
                 .Include(x => x.Role)
                 .Include(x => x.Images)
@@ -124,6 +129,13 @@ namespace backend.Services.Implementations
                         .FirstOrDefault()
                 })
                 .FirstOrDefaultAsync();
+
+            if (result == null)
+            {
+                _logger.LogWarning("Employee not found. EmployeeId: {EmployeeId}", id);
+            }
+
+            return result;
         }
 
         public async Task<EmployeeResponseDto> CreateAsync(EmployeeCreateDto dto)
@@ -178,8 +190,10 @@ namespace backend.Services.Implementations
                 _cacheService.IncrementVersion(EmployeeCacheVersionKey);
                 _cacheService.Remove(DashboardTotalEmployeesKey);
             }
-            catch
+            catch (Exception ex)
             {
+                _logger.LogError(ex, "Failed to create employee. Uploaded image will be deleted. FileName: {FileName}", fileName);
+
                 if (fileName != null)
                     _imageUploadService.DeleteEmployeeImage(fileName);
 
@@ -187,6 +201,9 @@ namespace backend.Services.Implementations
             }
 
             var createdEmployee = await GetByIdAsync(employee.Id);
+
+            _logger.LogInformation("Employee created successfully. EmployeeId: {EmployeeId}", employee.Id);
+
 
             return createdEmployee!;
         }
@@ -244,6 +261,7 @@ namespace backend.Services.Implementations
             }
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Employee updated successfully. EmployeeId: {EmployeeId}", id);
             _cacheService.IncrementVersion(EmployeeCacheVersionKey);
             return true;
         }
@@ -260,6 +278,7 @@ namespace backend.Services.Implementations
             employee.UpdatedBy = "system";
 
             await _context.SaveChangesAsync();
+            _logger.LogInformation("Soft deleting employee. EmployeeId: {EmployeeId}", id);
             _cacheService.IncrementVersion(EmployeeCacheVersionKey);
             _cacheService.Remove(DashboardTotalEmployeesKey);
             return true;
