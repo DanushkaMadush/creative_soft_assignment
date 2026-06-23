@@ -8,14 +8,8 @@ import {
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { dashboardApi } from "../api/dashboardApi";
-import type { FishFarmLocation } from "../types/dashboard.types";
 import DashboardStatCard from "../components/dashboard/DashboardCard";
-
-interface DashboardData {
-  totalFishFarms: number;
-  totalEmployees: number;
-  locations: FishFarmLocation[];
-}
+import type { DashboardData } from "../types/dashboard.types";
 
 export default function HomePage() {
   const { data, isLoading, isError, refetch } = useQuery<DashboardData>({
