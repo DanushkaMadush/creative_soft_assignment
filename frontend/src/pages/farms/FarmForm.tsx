@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import {
   Box,
   Button,
@@ -10,17 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import type { FarmFormValues } from "../../types/employee.types";
-
-type FarmFormProps = {
-  form: UseFormReturn<FarmFormValues>;
-  submitText: string;
-  submittingText: string;
-  onSubmit: (data: FarmFormValues) => void;
-  onBack: () => void;
-  onReset?: () => void;
-  defaultImageUrl?: string;
-};
+import type { FarmFormProps } from "../../types/fishFarm.types";
 
 const FarmForm = ({
   form,

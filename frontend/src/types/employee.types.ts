@@ -1,3 +1,7 @@
+import type { UseFormReturn } from "react-hook-form";
+import type { Role } from "./role.types";
+import type { FishFarmResponse } from "./fishFarm.types";
+
 export interface Employee {
   id: string;
   fishFarmId: string;
@@ -46,3 +50,24 @@ export interface FarmFormValues {
   hasBarge: boolean;
   image: File | null;
 }
+
+export type EditEmployeeDialogProps = {
+  open: boolean;
+  employee: Employee;
+  loading: boolean;
+  error: string | null;
+  onClose: () => void;
+  onSubmit: (data: EmployeeFormValues) => void | Promise<void>;
+};
+
+export type EmployeeFormProps = {
+  form: UseFormReturn<EmployeeFormValues>;
+  roles: Role[];
+  fishFarms: FishFarmResponse[];
+  submitText: string;
+  onSubmit: (data: EmployeeFormValues) => void | Promise<void>;
+  onBack: () => void;
+  onReset?: () => void;
+  loading?: boolean;
+  defaultImageUrl?: string;
+};

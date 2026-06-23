@@ -6,19 +6,10 @@ import { roleApi } from "../../api/role.api";
 import { fishFarmApi } from "../../api/fishFarm.api";
 import type { Role } from "../../types/role.types";
 import type { FishFarmResponse } from "../../types/fishFarm.types";
-import type { Employee, EmployeeFormValues } from "../../types/employee.types";
+import type { EditEmployeeDialogProps, EmployeeFormValues } from "../../types/employee.types";
 import EmployeeForm from "./EmployeeForm";
 
 const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
-
-type EditEmployeeDialogProps = {
-  open: boolean;
-  employee: Employee;
-  loading: boolean;
-  error: string | null;
-  onClose: () => void;
-  onSubmit: (data: EmployeeFormValues) => void | Promise<void>;
-};
 
 const EditEmployeeDialog = ({
   open,

@@ -12,23 +12,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { Controller, type UseFormReturn } from "react-hook-form";
+import { Controller } from "react-hook-form";
 import { useEffect, useState } from "react";
-import type { Role } from "../../types/role.types";
-import type { FishFarmResponse } from "../../types/fishFarm.types";
-import type { EmployeeFormValues } from "../../types/employee.types";
-
-type EmployeeFormProps = {
-  form: UseFormReturn<EmployeeFormValues>;
-  roles: Role[];
-  fishFarms: FishFarmResponse[];
-  submitText: string;
-  onSubmit: (data: EmployeeFormValues) => void | Promise<void>;
-  onBack: () => void;
-  onReset?: () => void;
-  loading?: boolean;
-  defaultImageUrl?: string;
-};
+import type { EmployeeFormProps } from "../../types/employee.types";
 
 const EmployeeForm = ({
   form,

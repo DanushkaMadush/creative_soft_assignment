@@ -16,7 +16,7 @@ const defaultValues: FarmFormValues = {
   image: null,
 };
 
-function AddNewFarm() {
+export default function AddNewFarm() {
   const navigate = useNavigate();
 
   const [successMessage, setSuccessMessage] = useState("");
@@ -99,5 +99,3 @@ function AddNewFarm() {
     </Container>
   );
 }
-
-export default AddNewFarm;

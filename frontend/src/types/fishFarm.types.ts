@@ -1,3 +1,5 @@
+import type { UseFormReturn } from "react-hook-form";
+
 export type FishFarmId = string;
 
 export type EmployeeId = string;
@@ -92,3 +94,23 @@ export type DeleteFarmDialogProps = {
   onClose: () => void;
   onConfirm: () => void;
 };
+
+export type FarmFormValues = {
+  name: string;
+  latitude: string;
+  longitude: string;
+  numberOfCages: string;
+  hasBarge: boolean;
+  image: File | null;
+};
+
+export type FarmFormProps = {
+  form: UseFormReturn<FarmFormValues>;
+  submitText: string;
+  submittingText: string;
+  onSubmit: (data: FarmFormValues) => void;
+  onBack: () => void;
+  onReset?: () => void;
+  defaultImageUrl?: string;
+};
+

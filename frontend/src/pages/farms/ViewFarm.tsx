@@ -24,6 +24,7 @@ import { useForm } from "react-hook-form";
 
 import { fishFarmApi } from "../../api/fishFarm.api";
 import type {
+  FarmFormValues,
   FishFarmEmployeeResponse,
   FishFarmResponse,
   FishFarmUpdateRequest,
@@ -33,15 +34,6 @@ import FarmForm from "./FarmForm";
 
 
 const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
-
-type FarmFormValues = {
-  name: string;
-  latitude: string;
-  longitude: string;
-  numberOfCages: string;
-  hasBarge: boolean;
-  image: File | null;
-};
 
 const ViewFarm = () => {
   const { id } = useParams<{ id: string }>();
