@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Box,
@@ -23,36 +23,9 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import { useNavigate } from "react-router";
 import { fishFarmApi } from "../../api/fishFarm.api";
+import type { FilterValue, FishFarmQuery, FishFarmResponse, PagedResult } from "../../types/fishFarm.types";
 
 const BASE_IMAGE_URL = import.meta.env.VITE_API_BASE_URL;
-
-interface FishFarmResponse {
-  id: string;
-  name: string;
-  latitude: number;
-  longitude: number;
-  numberOfCages: number;
-  hasBarge: boolean;
-  isActive: boolean;
-  imageUrl?: string | null;
-}
-
-interface FishFarmQuery {
-  searchTerm?: string;
-  hasBarge?: boolean;
-  isActive?: boolean;
-  pageNumber?: number;
-  pageSize?: number;
-}
-
-interface PagedResult<T> {
-  items: T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-}
-
-type FilterValue = "all" | "true" | "false";
 
 function toBooleanFilter(value: FilterValue): boolean | undefined {
   if (value === "all") return undefined;
@@ -98,6 +71,8 @@ export default function ManageFarms() {
   } = useQuery<PagedResult<FishFarmResponse>>({
     queryKey: ["farms", queryParams],
     queryFn: () => fishFarmApi.getAll(queryParams),
+    placeholderData: keepPreviousData,
+    staleTime: 30000,
   });
 
   const farms = data?.items ?? [];
