@@ -31,7 +31,8 @@ builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IImageUploadService, ImageUploadService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-builder.Services.AddScoped<ICacheService, CacheService>();
+
+builder.Services.AddSingleton<ICacheService, CacheService>();
 
 var app = builder.Build();
 

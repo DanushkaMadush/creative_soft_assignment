@@ -12,14 +12,14 @@ namespace backend.Services.Implementations
         private readonly AppDbContext _context;
         private readonly IImageUploadService _imageUploadService;
         private readonly ICacheService _cacheService;
-        private readonly ILogger _logger;
+        private readonly ILogger<EmployeeService> _logger;
 
         private const string EmployeeCacheVersionKey = "employees_cache_version";
         private const string EmployeeGetAllCachePrefix = "employees_getall_";
         private const string DashboardTotalEmployeesKey = "dashboard_total_employees";
         private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
 
-        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService, ILogger logger)
+        public EmployeeService(AppDbContext context, IImageUploadService imageUploadService, ICacheService cacheService, ILogger<EmployeeService> logger)
         {
             _context = context;
             _imageUploadService = imageUploadService;
