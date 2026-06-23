@@ -1,13 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Alert, Container, Paper, Stack, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { employeeApi } from "../../api/employee.api";
 import { roleApi } from "../../api/role.api";
 import { fishFarmApi } from "../../api/fishFarm.api";
 
-import type { Role } from "../../types/role.types";
-import type { FishFarmResponse } from "../../types/fishFarm.types";
 import type { EmployeeFormValues } from "../../types/employee.types";
 import EmployeeForm from "./EmployeeForm";
 
@@ -23,9 +22,8 @@ const defaultValues: EmployeeFormValues = {
 
 export default function AddNewEmployee() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [fishFarms, setFishFarms] = useState<FishFarmResponse[]>([]);
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -34,33 +32,36 @@ export default function AddNewEmployee() {
     mode: "onBlur",
   });
 
-  useEffect(() => {
-    loadRoles();
-    loadFishFarms();
-  }, []);
+  const rolesQuery = useQuery({
+    queryKey: ["roles"],
+    queryFn: roleApi.getAll,
+  });
 
-  const loadRoles = async () => {
-    try {
-      const data = await roleApi.getAll();
-      setRoles(data);
-    } catch {
-      setErrorMessage("Failed to load roles.");
-    }
-  };
-
-  const loadFishFarms = async () => {
-    try {
-      const result = await fishFarmApi.getAll({
+  const fishFarmsQuery = useQuery({
+    queryKey: ["fish-farms", "active"],
+    queryFn: () =>
+      fishFarmApi.getAll({
         isActive: true,
         pageNumber: 1,
         pageSize: 100,
-      });
+      }),
+  });
 
-      setFishFarms(result.items);
-    } catch {
-      setErrorMessage("Failed to load fish farms.");
-    }
-  };
+  const createEmployeeMutation = useMutation({
+    mutationFn: employeeApi.create,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["employees"] });
+
+      setSuccessMessage("Employee created successfully.");
+
+      setTimeout(() => {
+        navigate("/employees");
+      }, 800);
+    },
+    onError: () => {
+      setErrorMessage("Failed to create employee.");
+    },
+  });
 
   const handleReset = () => {
     form.reset(defaultValues);
@@ -85,39 +86,30 @@ export default function AddNewEmployee() {
       formData.append("Image", data.image);
     }
 
-    try {
-      await employeeApi.create(formData);
-
-      setSuccessMessage("Employee created successfully.");
-
-      setTimeout(() => {
-        navigate("/employees");
-      }, 800);
-    } catch {
-      setErrorMessage("Failed to create employee.");
-    }
+    createEmployeeMutation.mutate(formData);
   };
 
   return (
     <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
       <Paper elevation={3} sx={{ p: { xs: 2.5, sm: 4 }, borderRadius: 3 }}>
         <Stack spacing={3}>
-          <Typography variant="h4" sx={{ fontWegiht: 700}}>
+          <Typography variant="h4" sx={{ fontWeight: 700 }}>
             Add New Employee
           </Typography>
 
-          {successMessage && (
-            <Alert severity="success">{successMessage}</Alert>
-          )}
+          {successMessage && <Alert severity="success">{successMessage}</Alert>}
 
-          {errorMessage && (
-            <Alert severity="error">{errorMessage}</Alert>
+          {(errorMessage || rolesQuery.isError || fishFarmsQuery.isError) && (
+            <Alert severity="error">
+              {errorMessage ||
+                "Failed to load roles or fish farms."}
+            </Alert>
           )}
 
           <EmployeeForm
             form={form}
-            roles={roles}
-            fishFarms={fishFarms}
+            roles={rolesQuery.data ?? []}
+            fishFarms={fishFarmsQuery.data?.items ?? []}
             submitText="Save Employee"
             onSubmit={handleSubmit}
             onBack={() => navigate("/employees")}

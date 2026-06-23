@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   Alert,
   Avatar,
@@ -84,6 +84,8 @@ const ManageEmployees = () => {
   } = useQuery<PagedResponse<Employee>>({
     queryKey: ["employees", employeeQuery],
     queryFn: () => employeeApi.getAll(employeeQuery),
+    placeholderData: keepPreviousData,
+    staleTime: 30000,
   });
 
   const { data: roles = [], isError: isRolesError } = useQuery<Role[]>({
