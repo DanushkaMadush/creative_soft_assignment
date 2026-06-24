@@ -87,6 +87,9 @@ const FarmForm = ({
               type="number"
               required
               error={Boolean(errors.latitude)}
+              slotProps={{
+                htmlInput: { min: -90, max: 90, step: 0.0001 },
+              }}
               helperText={errors.latitude?.message}
               {...register("latitude", {
                 required: "Latitude is required.",
@@ -99,6 +102,10 @@ const FarmForm = ({
 
                   if (numberValue < -90 || numberValue > 90) {
                     return "Latitude must be between -90 and 90.";
+                  }
+
+                  if (!/^-?\d+(\.\d{1,4})?$/.test(value)) {
+                    return "Latitude can have maximum 4 decimal places.";
                   }
 
                   return true;
@@ -115,6 +122,9 @@ const FarmForm = ({
               required
               error={Boolean(errors.longitude)}
               helperText={errors.longitude?.message}
+              slotProps={{
+                htmlInput: { min: -180, max: 180, step: 0.0001 },
+              }}
               {...register("longitude", {
                 required: "Longitude is required.",
                 validate: (value) => {
@@ -126,6 +136,10 @@ const FarmForm = ({
 
                   if (numberValue < -180 || numberValue > 180) {
                     return "Longitude must be between -180 and 180.";
+                  }
+
+                  if (!/^-?\d+(\.\d{1,4})?$/.test(value)) {
+                    return "Longitude can have maximum 4 decimal places.";
                   }
 
                   return true;
