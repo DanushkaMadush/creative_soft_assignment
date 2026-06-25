@@ -265,10 +265,7 @@ Static files are exposed by `app.UseStaticFiles()`, so stored upload paths can b
 ## Known Limitations
 
 - Login is UI-only and does not authenticate users.
-- The home page is still a placeholder.
 - There is no role management UI.
-- There are backend update and delete endpoints, but no frontend edit/delete flows yet.
-- CORS is currently configured as fully open with `AllowAnyOrigin`, `AllowAnyMethod`, and `AllowAnyHeader`.
 - Environment-specific secrets and connection strings are still stored in local config rather than safer environment-based configuration.
 
 ## Suggested Next Improvements
