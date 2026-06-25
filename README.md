@@ -274,9 +274,7 @@ Static files are exposed by `app.UseStaticFiles()`, so stored upload paths can b
 ## Suggested Next Improvements
 
 - Add real authentication and route protection
-- Add edit and soft-delete actions to the frontend
-- Add role management pages
-- Add backend validation/error handling middleware for cleaner API responses
+- Add edit and soft-delete actions to the frontend- Add role management pages
 - Add more unit and integration tests for employee and role flows
 - Add frontend code splitting to reduce the large production bundle
 - Add `.env.example` and deployment-ready configuration
